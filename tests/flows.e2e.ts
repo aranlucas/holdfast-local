@@ -422,12 +422,14 @@ test("mobile flow, dialog usability, persistence and no overflow", async ({
     })
     .check();
   await page.getByRole("button", { name: "Save to my shelf" }).click();
-  expect(
-    await page.evaluate(() => !!document.activeElement?.closest("dialog")),
-  ).toBe(true);
   await expect(
     page.getByRole("heading", { name: "Your purchase, prepared", exact: true }),
   ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => !!document.activeElement?.closest("dialog")),
+    )
+    .toBe(true);
   await page
     .getByRole("heading", { name: "Your purchase, prepared", exact: true })
     .scrollIntoViewIfNeeded();
