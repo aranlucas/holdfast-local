@@ -8,6 +8,8 @@ import {
   todayInZone,
   warrantyDeadline,
 } from "./model";
+import { calendarBlob, calendarEvents } from "./calendar";
+import { downloadBlob } from "./exports";
 export function Timeline({
   purchases,
   onSelect,
@@ -17,8 +19,8 @@ export function Timeline({
 }) {
   const [kind, setKind] = useState("all");
   const today = todayInZone();
-  const events = purchases
-    .filter((p) => p.outcome === "active")
+  const active = purchases.filter((p) => p.outcome === "active");
+  const events = active
     .flatMap((p) => [
       { p, kind: "return", deadline: returnDeadline(p) },
       { p, kind: "warranty", deadline: warrantyDeadline(p) },
@@ -58,6 +60,25 @@ export function Timeline({
             </button>
           ))}
         </div>
+      </div>
+      <div className="calendar-export">
+        <button
+          className="button secondary"
+          disabled={!calendarEvents(active, kind).length}
+          onClick={() =>
+            downloadBlob(
+              calendarBlob(active, kind),
+              "Holdfast-recorded-dates.ics",
+            )
+          }
+        >
+          <CalendarDays size={17} /> Export visible dates (.ics)
+        </button>
+        <p className="quiet footnote">
+          A one-time calendar file with item, merchant and policy source. No
+          receipt details. All-day dates stay fixed across time zones. Imports
+          do not update automatically; calendar settings may add alerts.
+        </p>
       </div>
       <div className="event-list">
         {events.map((e) => {

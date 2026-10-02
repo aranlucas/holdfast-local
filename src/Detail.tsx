@@ -22,6 +22,7 @@ import type { Purchase } from "./model";
 import { downloadBlob, exportPacket, packetHTML, safeName } from "./exports";
 import { MAX_FILE_BYTES } from "./extraction";
 import { Field, Modal, Notice } from "./ui";
+import { calendarBlob, calendarEvents } from "./calendar";
 export function Detail({
   p,
   onClose,
@@ -174,6 +175,23 @@ export function Detail({
                 </div>
               </div>
             </div>
+            <button
+              className="text-button"
+              disabled={!calendarEvents([p]).length}
+              onClick={() =>
+                downloadBlob(
+                  calendarBlob([p]),
+                  `Holdfast-${safeName(p.item)}-dates.ics`,
+                )
+              }
+            >
+              <CalendarDays size={16} /> Export this item’s dates (.ics)
+            </button>
+            <p className="quiet footnote">
+              All-day recorded dates only. Includes item, merchant and policy
+              source. No receipt, notes or serial number. Calendar imports do
+              not update automatically; calendar settings may add alerts.
+            </p>
           </section>
           <section className="source-panel">
             <div className="section-title">

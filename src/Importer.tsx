@@ -3,6 +3,7 @@ import { ArrowRight, FileText, Upload, Sparkles } from "lucide-react";
 import { Modal, Notice } from "./ui";
 import { extractReceipt, readReceiptFile } from "./extraction";
 import { sampleText } from "./samples";
+import { todayInZone } from "./model";
 import type { Purchase } from "./model";
 export function Importer({
   onClose,
@@ -34,7 +35,12 @@ export function Importer({
     }
   }
   return (
-    <Modal title="Give your receipt a home" onClose={onClose}>
+    <Modal
+      title="Give your receipt a home"
+      onClose={() => {
+        if (!busy) onClose();
+      }}
+    >
       <p className="modal-intro">
         Drop it in. Verify three facts. Keep a plan and the proof.
       </p>
@@ -73,6 +79,20 @@ export function Importer({
           hidden
         />
       </div>
+      <button
+        className="text-button multi-sample"
+        disabled={busy}
+        onClick={() => {
+          const p = extractReceipt(
+            `SYNTHETIC RECEIPT · Fictional merchant\nMerchant: Northline Goods\nPurchase date: ${todayInZone()}\nOrder: DEMO-BASKET\nItem: Studio wireless headphones — USD 129.00\nItem: Arc desk lamp — USD 48.00\nTax: USD 14.16\nTotal: USD 191.16\nReturn and warranty policies must be checked separately for each item.`,
+            "Synthetic Northline multi-item receipt",
+          );
+          p.synthetic = true;
+          onReady(p);
+        }}
+      >
+        <Sparkles size={16} /> Try a receipt with two items
+      </button>
       <div className="or">
         <span>or paste the receipt text</span>
       </div>
@@ -115,7 +135,8 @@ export function Importer({
       </div>
       <p className="quiet footnote">
         <FileText size={15} /> PDFs with a text layer are read locally. Photos
-        stay as evidence; enter their facts manually. One product per timeline.
+        stay as evidence; enter their facts manually. Multiple products get
+        separate verification and timelines.
       </p>
     </Modal>
   );

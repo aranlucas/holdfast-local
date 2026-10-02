@@ -40,6 +40,8 @@ import {
   savePurchase,
 } from "./storage";
 import { readReceiptFile } from "./extraction";
+import { ReceiptPicker } from "./ReceiptPicker";
+import { receiptItems } from "./receiptItems";
 function ItemIcon({ item }: { item: string }) {
   return /headphone/i.test(item) ? (
     <Headphones size={25} strokeWidth={1.4} />
@@ -108,6 +110,9 @@ export default function App() {
     [page, setPage] = useState("shelf"),
     [importing, setImporting] = useState(false),
     [draft, setDraft] = useState<Purchase | null>(null),
+    [receipt, setReceipt] = useState<Purchase | null>(null),
+    [queue, setQueue] = useState<Purchase[]>([]),
+    [queueTotal, setQueueTotal] = useState(0),
     [selected, setSelected] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
     [loaded, setLoaded] = useState(false),
@@ -189,9 +194,37 @@ export default function App() {
   }
   async function saveDraft(p: Purchase) {
     await save(p);
-    setDraft(null);
     setSelected(p.id);
-    setToast("Three facts confirmed. Your purchase is saved.");
+    setDraft(queue[0] || null);
+    setQueue(queue.slice(1));
+    setToast(
+      queue.length
+        ? `${p.item} saved. Verify the next item’s own facts.`
+        : "Three facts confirmed. Your purchase is saved.",
+    );
+    if (!queue.length) setQueueTotal(0);
+  }
+  function startDrafts(items: Purchase[]) {
+    setReceipt(null);
+    setImporting(false);
+    setDraft(items[0] || null);
+    setQueue(items.slice(1));
+    setQueueTotal(items.length > 1 ? items.length : 0);
+  }
+  function receiveReceipt(p: Purchase) {
+    setImporting(false);
+    if (receiptItems(p.receiptText).length > 1) setReceipt(p);
+    else startDrafts([p]);
+  }
+  function cancelDrafts() {
+    if (busyRef.current) return;
+    setDraft(null);
+    setQueue([]);
+    setQueueTotal(0);
+    if (queueTotal)
+      setToast(
+        "Unsaved items discarded. Already verified items stay on your shelf.",
+      );
   }
   async function demo() {
     setBusy(true);
@@ -215,7 +248,7 @@ export default function App() {
     setError("");
     try {
       const p = await readReceiptFile(file);
-      if (sequence === importSequence.current) setDraft(p);
+      if (sequence === importSequence.current) receiveReceipt(p);
     } catch (e) {
       setError(
         e instanceof Error
@@ -644,22 +677,31 @@ export default function App() {
       {importing ? (
         <Importer
           onClose={() => setImporting(false)}
-          onReady={(p) => {
-            setImporting(false);
-            setDraft(p);
-          }}
+          onReady={receiveReceipt}
+        />
+      ) : null}
+      {receipt ? (
+        <ReceiptPicker
+          receipt={receipt}
+          onClose={() => setReceipt(null)}
+          onReady={startDrafts}
         />
       ) : null}
       {draft ? (
         <Verifier
           key={draft.id}
           initial={draft}
-          onClose={() => setDraft(null)}
+          onClose={cancelDrafts}
           onSave={saveDraft}
           busy={busy}
+          queueProgress={
+            queueTotal
+              ? { current: queueTotal - queue.length, total: queueTotal }
+              : undefined
+          }
         />
       ) : null}
-      {detail && !draft ? (
+      {detail && !draft && !receipt ? (
         <Detail
           key={detail.id}
           p={detail}

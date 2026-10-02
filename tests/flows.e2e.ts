@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { mkdir, readFile } from "node:fs/promises";
 import JSZip from "jszip";
 import AxeBuilder from "@axe-core/playwright";
+import ICAL from "ical.js";
 const evidence = process.env.HOLDFAST_EVIDENCE_DIR || "/tmp/holdfast-qa";
 async function open(page: Page) {
   await page.goto("/");
@@ -598,4 +599,254 @@ test("saved calendar dates stay fixed across browser time zones", async ({
     ).toBeVisible();
     await context.close();
   }
+});
+
+async function saveUnknown(page: Page) {
+  await fact(page, "I checked the merchant, item, and amount.");
+  await fact(page, "I checked the purchase date and any delivery date.");
+  await page
+    .getByRole("checkbox", {
+      name: "I checked the item-specific rule, or intentionally left it unknown.",
+    })
+    .check();
+  await page.getByRole("button", { name: "Save to my shelf" }).click();
+}
+test("multi-item receipt keeps distinct rules, line amounts, source bytes and calendar privacy", async ({
+  page,
+  context,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "Add receipt", exact: true }).click();
+  const receipt =
+    "Merchant: Synthetic Basket Shop\nPurchase date: 2024-02-28\nOrder: DEMO-BASKET-TEST\nItem: Leap clock — USD 12.00\nItem: Bedside lamp — USD 48.00\nItem: Extra cable — USD 5.00\nTax: USD 5.20\nTotal: USD 70.20";
+  await page.locator('input[aria-label="Receipt file"]').setInputFiles({
+    name: "synthetic-basket.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(receipt),
+  });
+  await expect(
+    page.getByRole("heading", { name: "One receipt. Separate plans." }),
+  ).toBeVisible();
+  await page.getByRole("checkbox", { name: /Extra cable/ }).uncheck();
+  await page.screenshot({
+    path: `${evidence}/holdfast-multi-item-desktop.png`,
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Verify 2 items", exact: true })
+    .click();
+  await expect(
+    page.getByText("Item 1 of 2 · Leap clock", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Amount for this item", { exact: true }),
+  ).toHaveValue("12.00");
+  await fact(page, "I checked the merchant, item, and amount.");
+  await fact(page, "I checked the purchase date and any delivery date.");
+  await page.getByLabel("Return rule", { exact: true }).selectOption("days");
+  await page.getByLabel("Return window (days)").fill("1");
+  await page
+    .getByLabel("Warranty rule", { exact: true })
+    .selectOption("months");
+  await page.getByLabel("Policy source label").fill("Synthetic leap policy");
+  await page
+    .getByRole("checkbox", {
+      name: "I checked the item-specific rule, or intentionally left it unknown.",
+    })
+    .check();
+  await page.getByRole("button", { name: "Save to my shelf" }).click();
+  await expect(
+    page.getByText("Item 2 of 2 · Bedside lamp", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Amount for this item", { exact: true }),
+  ).toHaveValue("48.00");
+  await page.getByLabel("Amount for this item", { exact: true }).fill("47.00");
+  await saveUnknown(page);
+  await expect(
+    page.getByRole("heading", { name: "Bedside lamp", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Export this item’s dates (.ics)" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await expect(
+    page.getByRole("button", { name: "Open Extra cable" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Open Leap clock" }).click();
+  await expect(
+    page.getByRole("dialog").getByText("February 29, 2024", { exact: true }),
+  ).toBeVisible();
+  const cal = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Export this item’s dates (.ics)" })
+    .click();
+  const file = await cal;
+  await file.saveAs(`${evidence}/holdfast-synthetic-recorded-dates.ics`);
+  const calendar = new ICAL.Component(
+    ICAL.parse(await readFile((await file.path())!, "utf8")),
+  );
+  const events = calendar.getAllSubcomponents("vevent");
+  expect(events).toHaveLength(2);
+  expect(new ICAL.Event(events[0]).startDate.toString()).toBe("2024-02-29");
+  expect(events[0].getAllSubcomponents("valarm")).toHaveLength(0);
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "My device", exact: true }).click();
+  const backup = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download device backup" }).click();
+  const archive = await backup;
+  const zip = await JSZip.loadAsync(await readFile((await archive.path())!));
+  const data = JSON.parse(await zip.file("holdfast.json")!.async("string"));
+  expect(data.purchases).toHaveLength(2);
+  const lamp = data.purchases.find(
+    (p: { item: string }) => p.item === "Bedside lamp",
+  );
+  const clock = data.purchases.find(
+    (p: { item: string }) => p.item === "Leap clock",
+  );
+  expect(lamp.amount).toBe("47.00");
+  expect(lamp.policy.returnMode).toBe("unknown");
+  expect(clock.policy.returnDays).toBe(1);
+  for (const p of data.purchases)
+    expect(
+      await zip
+        .file(`evidence/${p.id}/${p.attachments[0].id}`)!
+        .async("string"),
+    ).toBe(receipt);
+  await page.getByRole("button", { name: "Timeline", exact: true }).click();
+  await page.getByRole("button", { name: "Returns", exact: true }).click();
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await context.setOffline(true);
+  const visibleCal = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Export visible dates (.ics)" })
+    .click();
+  const exported = await visibleCal;
+  expect(
+    new ICAL.Component(
+      ICAL.parse(await readFile((await exported.path())!, "utf8")),
+    ).getAllSubcomponents("vevent"),
+  ).toHaveLength(1);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Open Leap clock" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Open Bedside lamp" }),
+  ).toBeVisible();
+});
+
+test("mobile item selection and cancelling the queue preserves only saved items", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page);
+  await page.getByRole("button", { name: "Add receipt", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Try a receipt with two items" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "One receipt. Separate plans." }),
+  ).toBeVisible();
+  const result = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(
+    result.violations.map((v) => ({
+      id: v.id,
+      nodes: v.nodes.map((n) => n.failureSummary),
+    })),
+  ).toEqual([]);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: `${evidence}/holdfast-multi-item-mobile.png`,
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Verify 2 items", exact: true })
+    .click();
+  await page.screenshot({
+    path: `${evidence}/holdfast-verify-queue-mobile.png`,
+    fullPage: true,
+  });
+  await saveUnknown(page);
+  await expect(
+    page.getByText("Item 2 of 2 · Arc desk lamp", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Discard remaining items" }).click();
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Open Studio wireless headphones" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Open Arc desk lamp" }),
+  ).toHaveCount(0);
+});
+
+test("a failed second-item save retains its place and retries without duplicate purchases", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const put = IDBObjectStore.prototype.put;
+    Object.defineProperty(window, "holdfastBlockWrites", {
+      value: false,
+      writable: true,
+    });
+    IDBObjectStore.prototype.put = function (...args: Parameters<typeof put>) {
+      if (
+        (window as unknown as { holdfastBlockWrites: boolean })
+          .holdfastBlockWrites
+      )
+        throw new DOMException("Synthetic quota limit", "QuotaExceededError");
+      return put.apply(this, args);
+    };
+  });
+  await open(page);
+  await paste(
+    page,
+    "Merchant: Retry Shop\nDate: 2026-10-02\nItem: First clock USD 10.00\nItem: Second clock USD 20.00\nTotal: USD 30.00",
+  );
+  await page
+    .getByRole("button", { name: "Verify 2 items", exact: true })
+    .click();
+  await saveUnknown(page);
+  await expect(
+    page.getByText("Item 2 of 2 · Second clock", { exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    (
+      window as unknown as { holdfastBlockWrites: boolean }
+    ).holdfastBlockWrites = true;
+  });
+  await saveUnknown(page);
+  await expect(page.getByRole("alert")).toContainText(
+    "Could not save on this device",
+  );
+  await expect(
+    page.getByText("Item 2 of 2 · Second clock", { exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    (
+      window as unknown as { holdfastBlockWrites: boolean }
+    ).holdfastBlockWrites = false;
+  });
+  await page.getByRole("button", { name: "Save to my shelf" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Second clock", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Open First clock" }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("button", { name: "Open Second clock" }),
+  ).toHaveCount(1);
 });
