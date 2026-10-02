@@ -1148,6 +1148,78 @@ main {
   align-items: center;
   gap: 12px;
 }
+.receipt-picks {
+  margin: 22px 0;
+  display: grid;
+  gap: 12px;
+}
+.receipt-pick {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px;
+  background: #f5f7ef;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.receipt-pick input {
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.receipt-pick span {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.receipt-pick small {
+  color: var(--muted);
+}
+.receipt-pick code {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+.queue-progress {
+  margin: 0 0 22px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--ink);
+  background: #f5f7ef;
+  display: grid;
+  gap: 4px;
+}
+.queue-progress strong {
+  font-size: 13px;
+}
+.queue-progress span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.multi-sample {
+  margin-top: 16px;
+}
+.calendar-export {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  margin: 0 0 22px;
+}
+.calendar-export button {
+  flex-shrink: 0;
+}
+.calendar-export p {
+  max-width: 540px;
+}
+@media (max-width: 700px) {
+  .calendar-export {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .receipt-pick {
+    padding: 14px;
+  }
+}
 .calculation-preview {
   border-left: 2px solid #97b06c;
   background: #f1f5e9;

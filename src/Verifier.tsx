@@ -49,11 +49,13 @@ export function Verifier({
   onClose,
   onSave,
   busy,
+  queueProgress,
 }: {
   initial: Purchase;
   onClose: () => void;
   onSave: (p: Purchase) => Promise<void>;
   busy: boolean;
+  queueProgress?: { current: number; total: number };
 }) {
   const [p, setP] = useState(initial),
     [step, setStep] = useState(0),
@@ -115,7 +117,9 @@ export function Verifier({
   return (
     <Modal
       title={initial.confirmedAt ? "Review your facts" : "Verify three facts"}
-      onClose={onClose}
+      onClose={() => {
+        if (!busy) onClose();
+      }}
       wide
     >
       <div className="verify-layout">
@@ -156,6 +160,17 @@ export function Verifier({
           </div>
         </aside>
         <section className="verify-main">
+          {queueProgress ? (
+            <div className="queue-progress">
+              <strong>
+                Item {queueProgress.current} of {queueProgress.total} · {p.item}
+              </strong>
+              <span>
+                Saved items stay on your shelf. Closing discards this item and
+                any remaining drafts.
+              </span>
+            </div>
+          ) : null}
           <div className="step-kicker">Fact {step + 1} of 3</div>
           <h3>
             {step === 0
@@ -514,7 +529,11 @@ export function Verifier({
               }}
             >
               <ArrowLeft size={16} />
-              {step ? "Back" : "Cancel"}
+              {step
+                ? "Back"
+                : queueProgress
+                  ? "Discard remaining items"
+                  : "Cancel"}
             </button>
             <button className="button primary" onClick={next} disabled={busy}>
               {busy
