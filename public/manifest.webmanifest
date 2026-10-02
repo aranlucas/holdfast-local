@@ -1,0 +1,16 @@
+{
+  "name": "Holdfast — Receipts, ready",
+  "short_name": "Holdfast",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9f6",
+  "theme_color": "#173c35",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

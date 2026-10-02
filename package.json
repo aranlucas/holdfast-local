@@ -1,0 +1,35 @@
+{
+  "name": "holdfast",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4319 --strictPort",
+    "build": "tsc -b && vite build && node scripts-build-sw.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 4319 --strictPort",
+    "start": "node server.mjs",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src tests *.json *.ts *.mjs",
+    "check:format": "prettier --check src tests *.json *.ts *.mjs"
+  },
+  "dependencies": {
+    "idb": "^8.0.3",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.577.0",
+    "pdfjs-dist": "^5.4.624",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.58.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^3.2.4"
+  }
+}
