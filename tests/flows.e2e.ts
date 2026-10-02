@@ -118,6 +118,9 @@ test("desktop shelf, filters, timeline, packet and original data stay local", as
   await page.getByLabel("Serial number", { exact: true }).fill("SYNTHETIC-123");
   await page.getByRole("button", { name: "Save notes" }).click();
   await expect(page.getByRole("button", { name: "Notes saved" })).toBeVisible();
+  await page
+    .getByRole("heading", { name: "Your purchase, prepared", exact: true })
+    .scrollIntoViewIfNeeded();
   await page.screenshot({
     path: `${evidence}/holdfast-proof-desktop.png`,
     fullPage: false,
@@ -421,8 +424,21 @@ test("mobile flow, dialog usability, persistence and no overflow", async ({
   expect(
     await page.evaluate(() => !!document.activeElement?.closest("dialog")),
   ).toBe(true);
+  await expect(
+    page.getByRole("heading", { name: "Your purchase, prepared", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("heading", { name: "Your purchase, prepared", exact: true })
+    .scrollIntoViewIfNeeded();
   await page.screenshot({
     path: `${evidence}/holdfast-proof-mobile.png`,
+    fullPage: false,
+  });
+  await page
+    .getByRole("button", { name: "Export proof packet", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: `${evidence}/holdfast-preparation-mobile.png`,
     fullPage: false,
   });
   expect(

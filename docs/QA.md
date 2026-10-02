@@ -14,10 +14,10 @@ The in-app browser was tried first but its tool transport became unavailable (`T
 
 ## Evidence artifacts
 
-Screenshots: empty desktop, sample shelf desktop/mobile, proof detail desktop/mobile, timeline desktop. Browser-exported synthetic proof ZIP, printable HTML and device backup ZIP accompany the handoff. See the sibling `deliverables/` folder in the task workspace; source-only archives intentionally omit personal data and temporary test traces.
+Screenshots: empty desktop, sample shelf desktop/mobile, proof detail desktop/mobile, mobile preparation checklist, timeline desktop. Browser-exported synthetic proof ZIP, printable HTML and device backup ZIP accompany the handoff. See the sibling `deliverables/` folder in the task workspace; source-only archives intentionally omit personal data and temporary test traces.
 
 ## Limits
 
 Chromium was tested; Safari/Firefox and real iOS/Android were not. Automated accessibility checks do not replace a screen-reader usability review. Photos and scanned PDFs are retained without OCR; unusual PDF layouts may need manual correction. No real merchant eligibility, real personal receipts, external claim submission, legal entitlement, paid infrastructure, cloud sync or deployed-host behavior was tested. Device storage is unencrypted and can be evicted; use the exported backup. ZIP import is bounded and schema-checked; very large archives are deliberately refused.
 
-The Mac reconnected and the host GitHub CLI session was verified as authenticated. The final browser suite was rerun after the last code changes: 10/10 pass. Repository publication and portable bundle identifiers are recorded in the handoff. No paid infrastructure or public deployment was created.
+The Mac reconnected and the host GitHub CLI session was verified as authenticated. The final browser suite was rerun after the last code changes: 10/10 pass. The implementation is committed on the private repository default branch. The review branch adds hosted CI, this accurate handoff record, and screenshot assertions that wait for the saved detail state rather than a transient saving dialog. Portable bundle identifiers are recorded in the handoff. No paid infrastructure or public deployment was created.

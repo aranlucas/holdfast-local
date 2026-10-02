@@ -2,6 +2,8 @@
 
 **Keep the proof. Lose the paper pile.** A private, local-first receipt cabinet that turns a receipt into a transparent return/warranty timeline and a ready-to-export proof packet.
 
+Private source repository: https://github.com/aranlucas/holdfast-local
+
 ## Run
 
 Requires Node.js 22.12+ (tested on Node 26.10) and npm. No account, credentials, AI service, database server, or environment secrets.
@@ -47,6 +49,8 @@ npx playwright install chromium
 npm run test:e2e
 npm run check:format
 ```
+
+The draft review branch adds hosted CI that runs formatting, unit tests, the production build, and the browser suite with one Chromium worker. It does not deploy.
 
 Browser tests use one worker and a local production server (reuse an existing server on port 4319). To reuse an already installed Chromium, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable. Screenshots and sample exports default to `/tmp/holdfast-qa`; override with `HOLDFAST_EVIDENCE_DIR`. Tests use only synthetic data. See [QA](docs/QA.md) and [decisions](docs/DECISIONS.md).
 
