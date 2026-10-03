@@ -9,6 +9,7 @@ import {
 import type { Purchase } from "./model";
 import { downloadBlob, exportBackup, importBackup } from "./exports";
 import { Notice } from "./ui";
+
 export function Privacy({
   purchases,
   onRestore,
@@ -24,10 +25,13 @@ export function Privacy({
     [working, setWorking] = useState(false),
     [clear, setClear] = useState(false),
     [success, setSuccess] = useState("");
+
   const file = useRef<HTMLInputElement>(null);
+
   async function backup() {
     setWorking(true);
     setError("");
+
     try {
       downloadBlob(await exportBackup(purchases), "Holdfast-device-backup.zip");
       setSuccess(
@@ -41,11 +45,13 @@ export function Privacy({
       setWorking(false);
     }
   }
+
   async function restore(f?: File) {
     if (!f) return;
     setWorking(true);
     setError("");
     setSuccess("");
+
     try {
       const p = await importBackup(f);
       await onRestore(p);
@@ -60,9 +66,11 @@ export function Privacy({
       );
     } finally {
       setWorking(false);
+
       if (file.current) file.current.value = "";
     }
   }
+
   return (
     <>
       <div className="page-heading">

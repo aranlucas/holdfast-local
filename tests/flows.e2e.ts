@@ -1,14 +1,23 @@
+declare global {
+  interface Window {
+    holdfastBlockWrites: boolean;
+  }
+}
+
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { mkdir, readFile } from "node:fs/promises";
 import JSZip from "jszip";
 import AxeBuilder from "@axe-core/playwright";
 import ICAL from "ical.js";
+
 const evidence = process.env.HOLDFAST_EVIDENCE_DIR || "/tmp/holdfast-qa";
+
 async function open(page: Page) {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Your shelf" })).toBeVisible();
 }
+
 async function demo(page: Page) {
   await mkdir(evidence, { recursive: true });
   await page.getByRole("button", { name: "Try a sample shelf" }).click();
@@ -16,10 +25,12 @@ async function demo(page: Page) {
     page.getByRole("button", { name: "Open Studio wireless headphones" }),
   ).toBeVisible();
 }
+
 async function fact(page: Page, text: string) {
   await page.getByRole("checkbox", { name: text }).check();
   await page.getByRole("button", { name: "Confirm & continue" }).click();
 }
+
 async function paste(page: Page, text: string) {
   await page.getByRole("button", { name: "Add receipt", exact: true }).click();
   await page
@@ -29,6 +40,7 @@ async function paste(page: Page, text: string) {
     .getByRole("button", { name: "Verify three facts", exact: true })
     .click();
 }
+
 function makePDF() {
   const lines = [
     "Merchant: Test PDF Store",
@@ -37,7 +49,9 @@ function makePDF() {
     "Order: TEST-PDF-1",
     "Total: USD 24.00",
   ];
+
   const stream = `BT /F1 14 Tf 50 740 Td ${lines.map((l, i) => `${i ? "0 -24 Td " : ""}(${l}) Tj`).join("\n")} ET`;
+
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -45,6 +59,7 @@ function makePDF() {
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
     `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`,
   ];
+
   let data = "%PDF-1.4\n";
   const offsets = [0];
   objects.forEach((obj, i) => {
@@ -56,14 +71,18 @@ function makePDF() {
     .slice(1)
     .map((o) => String(o).padStart(10, "0") + " 00000 n \n")
     .join("")}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+
   return Buffer.from(data);
 }
+
 test("desktop shelf, filters, timeline, packet and original data stay local", async ({
   page,
 }) => {
   await mkdir(evidence, { recursive: true });
+
   const errors: string[] = [],
     external: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("request", (r) => {
     if (
@@ -175,6 +194,7 @@ test("desktop shelf, filters, timeline, packet and original data stay local", as
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
 });
+
 test("human confirmation, ambiguous date, custom delivery policy, edit and unknown", async ({
   page,
 }) => {
@@ -239,6 +259,7 @@ test("human confirmation, ambiguous date, custom delivery policy, edit and unkno
     0,
   );
 });
+
 test("local PDF text layer, failed import retry, attachment bytes and packet", async ({
   page,
 }) => {
@@ -288,12 +309,15 @@ test("local PDF text layer, failed import retry, attachment bytes and packet", a
   await page
     .getByRole("button", { name: "Export proof packet", exact: true })
     .click();
+
   const zip = await JSZip.loadAsync(
     await readFile((await (await download).path())!),
   );
+
   const pdfName = Object.keys(zip.files).find((n) =>
     n.endsWith("-receipt.pdf"),
   )!;
+
   expect(await zip.file(pdfName)!.async("nodebuffer")).toEqual(makePDF());
   await page.getByRole("button", { name: "Close dialog" }).click();
   await page.reload();
@@ -302,6 +326,7 @@ test("local PDF text layer, failed import retry, attachment bytes and packet", a
     page.getByRole("button", { name: "condition.txt" }),
   ).toBeVisible();
 });
+
 test("backup restore, malformed backup recovery, clear and closed outcomes", async ({
   page,
 }) => {
@@ -348,6 +373,7 @@ test("backup restore, malformed backup recovery, clear and closed outcomes", asy
     page.getByRole("button", { name: "Open Pour-over kettle" }),
   ).toBeVisible();
 });
+
 test("fully offline reload, extraction, PDF lazy loading, save and export", async ({
   page,
   context,
@@ -392,6 +418,7 @@ test("fully offline reload, extraction, PDF lazy loading, save and export", asyn
   ).toBeVisible();
   await context.setOffline(false);
 });
+
 test("mobile flow, dialog usability, persistence and no overflow", async ({
   page,
 }) => {
@@ -460,18 +487,21 @@ test("mobile flow, dialog usability, persistence and no overflow", async ({
     ),
   ).toBe(true);
 });
+
 test("keyboard focus trap and escape restore focus", async ({ page }) => {
   await open(page);
   const add = page.getByRole("button", { name: "Add receipt", exact: true });
   await add.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog")).toBeVisible();
+
   for (let i = 0; i < 15; i++) {
     await page.keyboard.press("Tab");
     expect(
       await page.evaluate(() => !!document.activeElement?.closest("dialog")),
     ).toBe(true);
   }
+
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(add).toBeFocused();
@@ -482,11 +512,14 @@ test("accessible names, landmarks and AA contrast on desktop and mobile", async 
 }) => {
   await open(page);
   await demo(page);
+
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
+
     const result = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
       .analyze();
+
     expect(
       result.violations.map((v) => ({
         id: v.id,
@@ -497,12 +530,15 @@ test("accessible names, landmarks and AA contrast on desktop and mobile", async 
       })),
     ).toEqual([]);
   }
+
   await page
     .getByRole("button", { name: "Open Studio wireless headphones" })
     .click();
+
   const detail = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
+
   expect(
     detail.violations.map((v) => ({
       id: v.id,
@@ -524,11 +560,9 @@ test("write failure keeps the verified draft and succeeds on retry", async ({
       writable: true,
     });
     IDBObjectStore.prototype.put = function (...args: Parameters<typeof put>) {
-      if (
-        (window as unknown as { holdfastBlockWrites: boolean })
-          .holdfastBlockWrites
-      )
+      if (window.holdfastBlockWrites)
         throw new DOMException("Synthetic quota limit", "QuotaExceededError");
+
       return put.apply(this, args);
     };
   });
@@ -552,9 +586,7 @@ test("write failure keeps the verified draft and succeeds on retry", async ({
     page.getByRole("heading", { name: "Which rule applies to this item?" }),
   ).toBeVisible();
   await page.evaluate(() => {
-    (
-      window as unknown as { holdfastBlockWrites: boolean }
-    ).holdfastBlockWrites = false;
+    window.holdfastBlockWrites = false;
   });
   await page.getByRole("button", { name: "Save to my shelf" }).click();
   await expect(
@@ -566,6 +598,7 @@ test("write failure keeps the verified draft and succeeds on retry", async ({
     page.getByRole("button", { name: "Open Test notebook" }),
   ).toBeVisible();
 });
+
 test("saved calendar dates stay fixed across browser time zones", async ({
   browser,
 }) => {
@@ -613,14 +646,17 @@ async function saveUnknown(page: Page) {
     .check();
   await page.getByRole("button", { name: "Save to my shelf" }).click();
 }
+
 test("multi-item receipt keeps distinct rules, line amounts, source bytes and calendar privacy", async ({
   page,
   context,
 }) => {
   await open(page);
   await page.getByRole("button", { name: "Add receipt", exact: true }).click();
+
   const receipt =
     "Merchant: Synthetic Basket Shop\nPurchase date: 2024-02-28\nOrder: DEMO-BASKET-TEST\nItem: Leap clock — USD 12.00\nItem: Bedside lamp — USD 48.00\nItem: Extra cable — USD 5.00\nTax: USD 5.20\nTotal: USD 70.20";
+
   await page.locator('input[aria-label="Receipt file"]').setInputFiles({
     name: "synthetic-basket.txt",
     mimeType: "text/plain",
@@ -685,9 +721,11 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
     .click();
   const file = await cal;
   await file.saveAs(`${evidence}/holdfast-synthetic-recorded-dates.ics`);
+
   const calendar = new ICAL.Component(
     ICAL.parse(await readFile((await file.path())!, "utf8")),
   );
+
   const events = calendar.getAllSubcomponents("vevent");
   expect(events).toHaveLength(2);
   expect(new ICAL.Event(events[0]).startDate.toString()).toBe("2024-02-29");
@@ -700,15 +738,19 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
   const zip = await JSZip.loadAsync(await readFile((await archive.path())!));
   const data = JSON.parse(await zip.file("holdfast.json")!.async("string"));
   expect(data.purchases).toHaveLength(2);
+
   const lamp = data.purchases.find(
     (p: { item: string }) => p.item === "Bedside lamp",
   );
+
   const clock = data.purchases.find(
     (p: { item: string }) => p.item === "Leap clock",
   );
+
   expect(lamp.amount).toBe("47.00");
   expect(lamp.policy.returnMode).toBe("unknown");
   expect(clock.policy.returnDays).toBe(1);
+
   for (const p of data.purchases)
     expect(
       await zip
@@ -752,9 +794,11 @@ test("mobile item selection and cancelling the queue preserves only saved items"
   await expect(
     page.getByRole("heading", { name: "One receipt. Separate plans." }),
   ).toBeVisible();
+
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
+
   expect(
     result.violations.map((v) => ({
       id: v.id,
@@ -802,11 +846,9 @@ test("a failed second-item save retains its place and retries without duplicate 
       writable: true,
     });
     IDBObjectStore.prototype.put = function (...args: Parameters<typeof put>) {
-      if (
-        (window as unknown as { holdfastBlockWrites: boolean })
-          .holdfastBlockWrites
-      )
+      if (window.holdfastBlockWrites)
         throw new DOMException("Synthetic quota limit", "QuotaExceededError");
+
       return put.apply(this, args);
     };
   });
@@ -823,9 +865,7 @@ test("a failed second-item save retains its place and retries without duplicate 
     page.getByText("Item 2 of 2 · Second clock", { exact: true }),
   ).toBeVisible();
   await page.evaluate(() => {
-    (
-      window as unknown as { holdfastBlockWrites: boolean }
-    ).holdfastBlockWrites = true;
+    window.holdfastBlockWrites = true;
   });
   await saveUnknown(page);
   await expect(page.getByRole("alert")).toContainText(
@@ -835,9 +875,7 @@ test("a failed second-item save retains its place and retries without duplicate 
     page.getByText("Item 2 of 2 · Second clock", { exact: true }),
   ).toBeVisible();
   await page.evaluate(() => {
-    (
-      window as unknown as { holdfastBlockWrites: boolean }
-    ).holdfastBlockWrites = false;
+    window.holdfastBlockWrites = false;
   });
   await page.getByRole("button", { name: "Save to my shelf" }).click();
   await expect(

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { useRef, useState } from "react";
 import {
   ArrowDownToLine,
@@ -23,6 +24,7 @@ import { downloadBlob, exportPacket, packetHTML, safeName } from "./exports";
 import { MAX_FILE_BYTES } from "./extraction";
 import { Field, Modal, Notice } from "./ui";
 import { calendarBlob, calendarEvents } from "./calendar";
+
 export function Detail({
   p,
   onClose,
@@ -41,24 +43,32 @@ export function Detail({
     [error, setError] = useState(""),
     [exporting, setExporting] = useState(false),
     [saved, setSaved] = useState(false);
+
   const fileInput = useRef<HTMLInputElement>(null);
+
   const ret = returnDeadline(p),
     war = warrantyDeadline(p),
     status = returnStatus(p),
     done = CHECKLIST.filter((c) => p.checklist[c.id]).length;
+
   async function save(next: Purchase) {
     setError("");
+
     try {
       await onSave({ ...next, updatedAt: new Date().toISOString() });
+
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save. Try again.");
+
       return false;
     }
   }
+
   async function packet() {
     setExporting(true);
     setError("");
+
     try {
       downloadBlob(
         await exportPacket(p),
@@ -72,13 +82,17 @@ export function Detail({
       setExporting(false);
     }
   }
+
   async function attach(file?: File) {
     if (!file) return;
+
     try {
       if (file.size > MAX_FILE_BYTES)
         throw new Error("Evidence must be 12 MB or smaller.");
+
       if (p.attachments.length >= 10)
         throw new Error("Each purchase can hold up to 10 documents.");
+
       if (!/\.(pdf|txt|md|png|jpe?g|webp)$/i.test(file.name))
         throw new Error("Use a PDF, text, PNG, JPEG, or WebP document.");
       await save({
@@ -100,6 +114,7 @@ export function Detail({
       if (fileInput.current) fileInput.current.value = "";
     }
   }
+
   return (
     <Modal title="Your purchase, prepared" onClose={onClose} wide>
       <div className="detail-top">
@@ -384,7 +399,9 @@ export function Detail({
             onChange={(e) =>
               void save({
                 ...p,
-                outcome: e.target.value as Purchase["outcome"],
+                outcome: z
+                  .enum(["active", "returned", "kept"])
+                  .parse(e.target.value),
               })
             }
           >

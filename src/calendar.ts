@@ -8,23 +8,30 @@ function textValue(value: string): string {
     .replace(/[,;]/g, "\\$&")
     .replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
 }
+
 function fold(line: string): string {
   const encoder = new TextEncoder();
+
   let part = "",
     length = 0,
     result = "";
+
   for (const char of line) {
     const size = encoder.encode(char).length;
+
     if (length + size > 75) {
       result += part + "\r\n";
       part = " ";
       length = 1;
     }
+
     part += char;
     length += size;
   }
+
   return result + part;
 }
+
 export function calendarEvents(purchases: Purchase[], kind = "all") {
   return purchases
     .filter((p) => !!p.confirmedAt)
@@ -39,6 +46,7 @@ export function calendarEvents(purchases: Purchase[], kind = "all") {
         (kind === "all" || e.kind === kind),
     );
 }
+
 export function calendarText(
   purchases: Purchase[],
   kind = "all",
@@ -48,21 +56,26 @@ export function calendarText(
     .toISOString()
     .replace(/[-:]/g, "")
     .replace(/\.\d{3}/, "");
+
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Holdfast//Recorded policy dates//EN",
     "CALSCALE:GREGORIAN",
   ];
+
   for (const e of calendarEvents(purchases, kind)) {
     const date = e.deadline.date!;
+
     // DATE values are calendar days. DTEND is exclusive, including at 2199-12-31.
     const end = new Date(Date.parse(`${date}T00:00:00Z`) + 86400000)
       .toISOString()
       .slice(0, 10);
+
     const uid = Array.from(new TextEncoder().encode(e.p.id))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
+
     lines.push(
       "BEGIN:VEVENT",
       `UID:${uid}-${e.kind}@holdfast.local`,
@@ -76,9 +89,12 @@ export function calendarText(
       "END:VEVENT",
     );
   }
+
   lines.push("END:VCALENDAR");
+
   return lines.map(fold).join("\r\n") + "\r\n";
 }
+
 export function calendarBlob(purchases: Purchase[], kind = "all"): Blob {
   return new Blob([calendarText(purchases, kind)], {
     type: "text/calendar;charset=utf-8",

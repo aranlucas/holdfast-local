@@ -10,6 +10,7 @@ import {
 } from "./model";
 import { calendarBlob, calendarEvents } from "./calendar";
 import { downloadBlob } from "./exports";
+
 export function Timeline({
   purchases,
   onSelect,
@@ -20,6 +21,7 @@ export function Timeline({
   const [kind, setKind] = useState("all");
   const today = todayInZone();
   const active = purchases.filter((p) => p.outcome === "active");
+
   const events = active
     .flatMap((p) => [
       { p, kind: "return", deadline: returnDeadline(p) },
@@ -27,12 +29,14 @@ export function Timeline({
     ])
     .filter((e) => e.deadline.date && (kind === "all" || e.kind === kind))
     .sort((a, b) => a.deadline.date!.localeCompare(b.deadline.date!));
+
   const unknown = purchases.filter(
     (p) =>
       p.outcome === "active" &&
       (returnDeadline(p).state === "unknown" ||
         warrantyDeadline(p).state === "unknown"),
   );
+
   return (
     <>
       <div className="page-heading">
@@ -83,6 +87,7 @@ export function Timeline({
       <div className="event-list">
         {events.map((e) => {
           const left = daysLeft(e.deadline.date, today)!;
+
           return (
             <button
               key={`${e.p.id}-${e.kind}`}

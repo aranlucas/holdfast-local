@@ -42,6 +42,7 @@ import {
 import { readReceiptFile } from "./extraction";
 import { ReceiptPicker } from "./ReceiptPicker";
 import { receiptItems } from "./receiptItems";
+
 function ItemIcon({ item }: { item: string }) {
   return /headphone/i.test(item) ? (
     <Headphones size={25} strokeWidth={1.4} />
@@ -53,6 +54,7 @@ function ItemIcon({ item }: { item: string }) {
     <Package size={25} strokeWidth={1.4} />
   );
 }
+
 function ReceiptArt() {
   return (
     <div className="receipt-art" aria-hidden="true">
@@ -92,6 +94,7 @@ function ReceiptArt() {
     </div>
   );
 }
+
 function CheckStamp() {
   return (
     <svg width="37" height="37" viewBox="0 0 37 37" fill="none">
@@ -105,6 +108,7 @@ function CheckStamp() {
     </svg>
   );
 }
+
 export default function App() {
   const [purchases, setPurchases] = useState<Purchase[]>([]),
     [page, setPage] = useState("shelf"),
@@ -123,22 +127,27 @@ export default function App() {
     [online, setOnline] = useState(navigator.onLine),
     [offlineReady, setOfflineReady] = useState(false),
     [drag, setDrag] = useState(false);
+
   const busyRef = useRef(false),
     importSequence = useRef(0);
+
   const [today, setToday] = useState(todayInZone);
   useEffect(() => {
     const refresh = () => setToday(todayInZone());
     const timer = setInterval(refresh, 60000);
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
+
     return () => {
       clearInterval(timer);
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
   }, []);
+
   async function load() {
     setError("");
+
     try {
       setPurchases(await loadPurchases());
       setLoaded(true);
@@ -148,11 +157,13 @@ export default function App() {
       );
     }
   }
+
   useEffect(() => {
     void load();
     const net = () => setOnline(navigator.onLine);
     window.addEventListener("online", net);
     window.addEventListener("offline", net);
+
     return () => {
       window.removeEventListener("online", net);
       window.removeEventListener("offline", net);
@@ -170,8 +181,10 @@ export default function App() {
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 5000);
+
     return () => clearTimeout(timer);
   }, [toast]);
+
   async function save(p: Purchase) {
     if (busyRef.current)
       throw new Error("A save is still in progress. Try again in a moment.");
@@ -179,6 +192,7 @@ export default function App() {
     const previous = purchases;
     setBusy(true);
     setPurchases((old) => [p, ...old.filter((x) => x.id !== p.id)]);
+
     try {
       await savePurchase(p);
       setError("");
@@ -192,6 +206,7 @@ export default function App() {
       setBusy(false);
     }
   }
+
   async function saveDraft(p: Purchase) {
     await save(p);
     setSelected(p.id);
@@ -202,8 +217,10 @@ export default function App() {
         ? `${p.item} saved. Verify the next item’s own facts.`
         : "Three facts confirmed. Your purchase is saved.",
     );
+
     if (!queue.length) setQueueTotal(0);
   }
+
   function startDrafts(items: Purchase[]) {
     setReceipt(null);
     setImporting(false);
@@ -211,23 +228,29 @@ export default function App() {
     setQueue(items.slice(1));
     setQueueTotal(items.length > 1 ? items.length : 0);
   }
+
   function receiveReceipt(p: Purchase) {
     setImporting(false);
+
     if (receiptItems(p.receiptText).length > 1) setReceipt(p);
     else startDrafts([p]);
   }
+
   function cancelDrafts() {
     if (busyRef.current) return;
     setDraft(null);
     setQueue([]);
     setQueueTotal(0);
+
     if (queueTotal)
       setToast(
         "Unsaved items discarded. Already verified items stay on your shelf.",
       );
   }
+
   async function demo() {
     setBusy(true);
+
     try {
       const p = demoPurchases();
       await saveMany(p);
@@ -241,13 +264,16 @@ export default function App() {
       setBusy(false);
     }
   }
+
   async function drop(file?: File) {
     if (!file || busy) return;
     const sequence = ++importSequence.current;
     setBusy(true);
     setError("");
+
     try {
       const p = await readReceiptFile(file);
+
       if (sequence === importSequence.current) receiveReceipt(p);
     } catch (e) {
       setError(
@@ -259,8 +285,10 @@ export default function App() {
       setBusy(false);
     }
   }
+
   async function restore(p: Purchase[]) {
     setBusy(true);
+
     try {
       await saveMany(p);
       setPurchases(await loadPurchases());
@@ -268,8 +296,10 @@ export default function App() {
       setBusy(false);
     }
   }
+
   async function clear() {
     setBusy(true);
+
     try {
       await clearPurchases();
       setPurchases([]);
@@ -278,10 +308,12 @@ export default function App() {
       setBusy(false);
     }
   }
+
   const soon = purchases.filter((p) => returnStatus(p, today).key === "soon"),
     unknown = purchases.filter(
       (p) => returnStatus(p, today).key === "unknown" && p.outcome === "active",
     );
+
   const visible = purchases
     .filter(
       (p) =>
@@ -293,12 +325,16 @@ export default function App() {
     .sort((a, b) => {
       const da = returnDeadline(a).date,
         db = returnDeadline(b).date;
+
       return (da || "9999").localeCompare(db || "9999");
     });
+
   const spotlight = soon.sort((a, b) =>
     returnDeadline(a).date!.localeCompare(returnDeadline(b).date!),
   )[0];
+
   const detail = purchases.find((p) => p.id === selected);
+
   return (
     <div className="app-shell">
       <a href="#main" className="skip-link">
@@ -550,6 +586,7 @@ export default function App() {
                         const status = returnStatus(p, today),
                           ret = returnDeadline(p),
                           war = warrantyDeadline(p);
+
                         return (
                           <button
                             className="purchase-row"
@@ -720,6 +757,7 @@ export default function App() {
     </div>
   );
 }
+
 function FileLines() {
   return (
     <svg

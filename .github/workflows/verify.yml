@@ -22,6 +22,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run lint:plugin
       - run: npm run check:format
       - run: npm test
       - run: npm run build
