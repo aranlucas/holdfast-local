@@ -23,12 +23,15 @@ import {
   validateBackupRecord,
 } from "../src/exports";
 import JSZip from "jszip";
+
 function fixture() {
   const p = extractReceipt(sampleText("2026-10-02"));
   p.policy = samplePolicy();
   p.synthetic = true;
+
   return p;
 }
+
 describe("calendar dates independent of timestamps", () => {
   it.each([
     ["2024-02-29", true],
@@ -68,6 +71,7 @@ describe("calendar dates independent of timestamps", () => {
   it("rejects invalid dates in calculations", () =>
     expect(() => addDays("2026-02-30", 1)).toThrow());
 });
+
 describe("confirmed item-specific policies", () => {
   it("never assumes a return or warranty duration", () => {
     const p = blankPurchase();
@@ -143,6 +147,7 @@ describe("confirmed item-specific policies", () => {
     expect(returnStatus(p).key).toBe("closed");
   });
 });
+
 describe("transparent local extraction", () => {
   it("extracts values with line-level source evidence", () => {
     const p = fixture();
@@ -162,6 +167,7 @@ describe("transparent local extraction", () => {
     const p = extractReceipt(
       "Merchant: Shop\nDate: 02/03/2026\nItem: Hat\nTotal: USD 20.00",
     );
+
     expect(p.purchaseDate).toBe("");
     expect(p.evidence.purchaseDate.note).toContain("Ambiguous");
   });
@@ -169,6 +175,7 @@ describe("transparent local extraction", () => {
     const p = extractReceipt(
       "Merchant: Shop\nDate: February 28, 2026\nItem: Hat\nSubtotal: 10.00\nTotal: EUR 12.00",
     );
+
     expect(p.purchaseDate).toBe("2026-02-28");
     expect(p.amount).toBe("12.00");
     expect(p.currency).toBe("EUR");
@@ -179,6 +186,7 @@ describe("transparent local extraction", () => {
     const p = await readReceiptFile(
       new File(["image data"], "photo.png", { type: "image/png" }),
     );
+
     expect(p.item).toBe("");
     expect(p.attachments[0].name).toBe("photo.png");
     expect(p.notes).toContain("not extracted");
@@ -189,6 +197,7 @@ describe("transparent local extraction", () => {
     ).rejects.toThrow("Other files");
   });
 });
+
 describe("portable, safe proof and backup exports", () => {
   it("escapes receipt text, field values, and source labels in HTML", () => {
     const p = fixture();
@@ -245,8 +254,8 @@ describe("portable, safe proof and backup exports", () => {
   it("rejects malformed or unsupported backup schemas", () => {
     expect(() => validateBackupRecord({})).toThrow();
     const p = fixture();
-    p.policy.returnMode = "evil" as never;
-    expect(() => validateBackupRecord(p)).toThrow("policy");
+    const malformed = { ...p, policy: { ...p.policy, returnMode: "evil" } };
+    expect(() => validateBackupRecord(malformed)).toThrow("policy");
   });
   it("rejects a proof packet used as a backup", async () => {
     const packet = await exportPacket(fixture());
@@ -279,12 +288,35 @@ it("labels a date with no purchase label as a suggestion", () => {
   const p = extractReceipt(
     "Merchant: Shop\nDelivery date: 2026-10-02\nItem: Hat",
   );
+
   expect(p.evidence.purchaseDate.confidence).toBe("medium");
   expect(p.evidence.purchaseDate.note).toContain("delivery date");
 });
+
 it("discloses the editable default for an unspecified dollar currency", () => {
   const p = extractReceipt(
     "Merchant: Shop\nDate: 2026-10-02\nItem: Hat\nTotal: $19.00",
   );
+
   expect(p.evidence.amount.note).toContain("USD is an editable default");
+});
+
+it("rejects invalid backup primitives before persistence", () => {
+  const p = fixture();
+  expect(() => validateBackupRecord({ ...p, synthetic: "false" })).toThrow();
+  expect(() =>
+    validateBackupRecord({ ...p, checklist: { receipt: "yes" } }),
+  ).toThrow();
+  expect(() =>
+    validateBackupRecord({
+      ...p,
+      policy: { ...p.policy, returnDays: Infinity },
+    }),
+  ).toThrow();
+  expect(() =>
+    validateBackupRecord({
+      ...p,
+      evidence: { ...p.evidence, item: { ...p.evidence.item, line: 0 } },
+    }),
+  ).toThrow();
 });

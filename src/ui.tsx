@@ -1,6 +1,7 @@
 import { cloneElement, isValidElement, useEffect, useId, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { X } from "lucide-react";
+
 export function Modal({
   title,
   onClose,
@@ -15,16 +16,25 @@ export function Modal({
   const ref = useRef<HTMLDialogElement>(null),
     heading = useRef<HTMLHeadingElement>(null),
     id = useId();
+
   useEffect(() => {
-    const previous = document.activeElement as HTMLElement;
+    const active = document.activeElement;
+
+    const previous =
+      active instanceof HTMLElement || active instanceof SVGElement
+        ? active
+        : null;
+
     const dialog = ref.current;
     dialog?.showModal();
     heading.current?.focus();
+
     return () => {
       dialog?.close();
       previous?.focus?.();
     };
   }, []);
+
   return (
     <dialog
       ref={ref}
@@ -32,13 +42,16 @@ export function Modal({
       aria-labelledby={id}
       onKeyDown={(e) => {
         if (e.key !== "Tab") return;
+
         const nodes = Array.from(
           ref.current!.querySelectorAll<HTMLElement>(
             'button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex]:not([tabindex="-1"])',
           ),
         ).filter((node) => node.offsetParent !== null);
+
         const first = nodes[0],
           last = nodes[nodes.length - 1];
+
         if (
           e.shiftKey &&
           (document.activeElement === first ||
@@ -72,32 +85,34 @@ export function Modal({
     </dialog>
   );
 }
+
+type FieldControlProps = { id?: string; "aria-describedby"?: string };
+
 export function Field({
   label,
   children,
   hint,
 }: {
   label: string;
-  children: ReactNode;
+  children: ReactElement<FieldControlProps>;
   hint?: ReactNode;
 }) {
   const id = useId();
+
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
       {isValidElement(children)
-        ? cloneElement(
-            children as ReactElement<{
-              id?: string;
-              "aria-describedby"?: string;
-            }>,
-            { id, "aria-describedby": hint ? `${id}-hint` : undefined },
-          )
+        ? cloneElement(children, {
+            id,
+            "aria-describedby": hint ? `${id}-hint` : undefined,
+          })
         : children}
       {hint ? <small id={`${id}-hint`}>{hint}</small> : null}
     </div>
   );
 }
+
 export function Notice({
   children,
   kind = "info",

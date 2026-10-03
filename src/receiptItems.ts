@@ -16,6 +16,7 @@ export function receiptItems(text: string): ReceiptItem[] {
     const excerpt = raw.trim();
     const labeled = /^(item|product|description)\s*:\s*/i.test(excerpt);
     const body = excerpt.replace(/^(item|product|description)\s*:\s*/i, "");
+
     if (
       !labeled &&
       /^(merchant|store|date|purchase|order|receipt|total|subtotal|tax|shipping|discount|paid|amount|return|warranty|quantity|change|balance|payment)\b/i.test(
@@ -23,14 +24,19 @@ export function receiptItems(text: string): ReceiptItem[] {
       )
     )
       return [];
+
     const price = body.match(
       /\s+(?:(USD|EUR|GBP|CAD|AUD)\s*|([$€£])\s*)?(\d[\d,]*\.\d{2})$/i,
     );
+
     if (!labeled && !price) return [];
+
     const item = (price ? body.slice(0, price.index) : body)
       .replace(/\s*[—–|]\s*$/, "")
       .trim();
+
     if (!item || !/[\p{L}]/u.test(item)) return [];
+
     return [
       {
         item,
@@ -48,6 +54,7 @@ export function receiptItems(text: string): ReceiptItem[] {
 
 export function itemDraft(receipt: Purchase, candidate: ReceiptItem): Purchase {
   const fresh = blankPurchase();
+
   return {
     ...fresh,
     merchant: receipt.merchant,

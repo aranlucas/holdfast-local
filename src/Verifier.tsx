@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -16,8 +17,10 @@ import {
 } from "./model";
 import { samplePolicy } from "./samples";
 import { Field, Modal, Notice } from "./ui";
+
 function EvidenceLine({ p, field }: { p: Purchase; field: EvidenceKey }) {
   const v = p.evidence[field];
+
   return (
     <details className="evidence">
       <summary>
@@ -44,6 +47,7 @@ function EvidenceLine({ p, field }: { p: Purchase; field: EvidenceKey }) {
     </details>
   );
 }
+
 export function Verifier({
   initial,
   onClose,
@@ -61,47 +65,62 @@ export function Verifier({
     [step, setStep] = useState(0),
     [confirmed, setConfirmed] = useState([false, false, false]),
     [errors, setErrors] = useState<string[]>([]);
+
   const titles = ["The purchase", "The date", "The policy"];
+
   function field<K extends keyof Purchase>(key: K, value: Purchase[K]) {
-    setP((old) => ({
-      ...old,
-      [key]: value,
-      ...(["merchant", "item", "purchaseDate", "amount"].includes(key)
-        ? {
-            evidence: {
-              ...old.evidence,
-              [key]: {
-                ...old.evidence[key as EvidenceKey],
-                confidence: "confirmed",
-                note: "Edited by you. Original extraction evidence is retained.",
-              },
-            },
-          }
-        : {}),
-    }));
+    setP((old) => {
+      const next = { ...old, [key]: value };
+
+      const evidenceField = (
+        ["merchant", "item", "purchaseDate", "amount"] as const
+      ).find((field) => field === key);
+
+      if (evidenceField !== undefined) {
+        next.evidence = {
+          ...old.evidence,
+          [evidenceField]: {
+            ...old.evidence[evidenceField],
+            confidence: "confirmed",
+            note: "Edited by you. Original extraction evidence is retained.",
+          },
+        };
+      }
+
+      return next;
+    });
     setConfirmed((old) => old.map((v, i) => (i >= step ? false : v)));
   }
+
   function policy<K extends keyof Policy>(key: K, value: Policy[K]) {
     setP((old) => ({ ...old, policy: { ...old.policy, [key]: value } }));
     setConfirmed((old) => old.map((v, i) => (i === 2 ? false : v)));
   }
+
   function next() {
     const all = validatePurchase(p);
+
     const relevant =
       step === 0
         ? all.filter((e) => /merchant|item you|amount|currency/.test(e))
         : step === 1
           ? all.filter((e) => /purchase date|delivery|Delivery/.test(e))
           : all;
+
     if (relevant.length) {
       setErrors(relevant);
+
       return;
     }
+
     if (!confirmed[step]) {
       setErrors(["Confirm this fact after checking the evidence."]);
+
       return;
     }
+
     setErrors([]);
+
     if (step < 2) setStep(step + 1);
     else
       void onSave({
@@ -114,6 +133,7 @@ export function Verifier({
         ]),
       );
   }
+
   return (
     <Modal
       title={initial.confirmedAt ? "Review your facts" : "Verify three facts"}
@@ -304,7 +324,9 @@ export function Verifier({
                     onChange={(e) =>
                       policy(
                         "returnMode",
-                        e.target.value as Policy["returnMode"],
+                        z
+                          .enum(["unknown", "days", "date", "none"])
+                          .parse(e.target.value),
                       )
                     }
                   >
@@ -351,7 +373,12 @@ export function Verifier({
                       <select
                         value={p.policy.startOn}
                         onChange={(e) =>
-                          policy("startOn", e.target.value as Policy["startOn"])
+                          policy(
+                            "startOn",
+                            z
+                              .enum(["purchase", "arrival"])
+                              .parse(e.target.value),
+                          )
                         }
                       >
                         <option value="purchase">Purchase date</option>
@@ -387,7 +414,9 @@ export function Verifier({
                   onChange={(e) =>
                     policy(
                       "warrantyMode",
-                      e.target.value as Policy["warrantyMode"],
+                      z
+                        .enum(["unknown", "months", "date", "none"])
+                        .parse(e.target.value),
                     )
                   }
                 >
@@ -418,7 +447,7 @@ export function Verifier({
                       onChange={(e) =>
                         policy(
                           "warrantyStartOn",
-                          e.target.value as Policy["warrantyStartOn"],
+                          z.enum(["purchase", "arrival"]).parse(e.target.value),
                         )
                       }
                     >

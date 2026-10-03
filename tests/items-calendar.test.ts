@@ -7,6 +7,7 @@ import { blankPurchase } from "../src/model";
 
 const basket =
   "Merchant: Sample Shop\nPurchase date: 2024-02-28\nOrder: DEMO-1\nItem: Clock — EUR 12.00\nProduct: Lamp\nTax: EUR 4.20\nTotal: EUR 64.20\nReturn rules differ by product.";
+
 describe("separate item verification from one receipt", () => {
   it("matches labeled items with source lines and leaves missing line amounts empty", () => {
     const items = receiptItems(basket);
@@ -24,6 +25,7 @@ describe("separate item verification from one receipt", () => {
     const items = receiptItems(
       "Shop\nCotton hat $18.00\nBlue scarf GBP 12.50\nSubtotal: $30.50\nTax 3.00\nShipping 8.00\nReturn fee 2.00\nPaid 41.50",
     );
+
     expect(items.map((c) => c.item)).toEqual(["Cotton hat", "Blue scarf"]);
     expect(items[0].confidence).toBe("medium");
     expect(items[1].currency).toBe("GBP");
@@ -64,6 +66,7 @@ describe("separate item verification from one receipt", () => {
     expect(receiptItems("Photo retained. Enter manually.")).toEqual([]);
   });
 });
+
 function known() {
   const p = blankPurchase();
   p.merchant = "Synthetic Shop";
@@ -75,16 +78,20 @@ function known() {
   p.policy.warrantyMode = "months";
   p.policy.warrantyMonths = 12;
   p.policy.sourceLabel = "Synthetic boundary policy";
+
   return p;
 }
+
 function parse(text: string) {
   return new ICAL.Component(ICAL.parse(text)).getAllSubcomponents("vevent");
 }
+
 describe("RFC 5545 date-only calendar export", () => {
   it("parses all-day leap/month-end events with an exclusive next-day end", () => {
     const events = parse(
       calendarText([known()], "all", new Date("2026-10-02T12:34:56Z")),
     );
+
     expect(events).toHaveLength(2);
     const [a, b] = events.map((e) => new ICAL.Event(e));
     expect(a.startDate.isDate).toBe(true);
@@ -126,6 +133,7 @@ describe("RFC 5545 date-only calendar export", () => {
       `Recorded return end · ${p.item.replace(/\r\n/g, "\n")}`,
     );
     expect(events[0].getAllSubcomponents("valarm")).toHaveLength(0);
+
     for (const line of text.split("\r\n"))
       expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
     expect(text).not.toContain("�");

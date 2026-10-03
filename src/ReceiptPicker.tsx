@@ -16,9 +16,11 @@ export function ReceiptPicker({
 }) {
   const matches = receiptItems(receipt.receiptText);
   const candidates = matches.slice(0, 100);
+
   const [selected, setSelected] = useState<number[]>(
     candidates.slice(0, 20).map((_, i) => i),
   );
+
   return (
     <Modal title="One receipt. Separate plans." onClose={onClose}>
       <p className="modal-intro">

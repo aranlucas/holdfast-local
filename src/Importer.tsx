@@ -5,6 +5,7 @@ import { extractReceipt, readReceiptFile } from "./extraction";
 import { sampleText } from "./samples";
 import { todayInZone } from "./model";
 import type { Purchase } from "./model";
+
 export function Importer({
   onClose,
   onReady,
@@ -16,11 +17,14 @@ export function Importer({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [drag, setDrag] = useState(false);
+
   const input = useRef<HTMLInputElement>(null);
+
   async function fileReady(file?: File) {
     if (!file) return;
     setError("");
     setBusy(true);
+
     try {
       onReady(await readReceiptFile(file));
     } catch (e) {
@@ -31,9 +35,11 @@ export function Importer({
       );
     } finally {
       setBusy(false);
+
       if (input.current) input.current.value = "";
     }
   }
+
   return (
     <Modal
       title="Give your receipt a home"
@@ -55,6 +61,7 @@ export function Importer({
         onDrop={(e) => {
           e.preventDefault();
           setDrag(false);
+
           if (!busy) void fileReady(e.dataTransfer.files[0]);
         }}
       >
@@ -87,6 +94,7 @@ export function Importer({
             `SYNTHETIC RECEIPT · Fictional merchant\nMerchant: Northline Goods\nPurchase date: ${todayInZone()}\nOrder: DEMO-BASKET\nItem: Studio wireless headphones — USD 129.00\nItem: Arc desk lamp — USD 48.00\nTax: USD 14.16\nTotal: USD 191.16\nReturn and warranty policies must be checked separately for each item.`,
             "Synthetic Northline multi-item receipt",
           );
+
           p.synthetic = true;
           onReady(p);
         }}
@@ -118,6 +126,7 @@ export function Importer({
               sampleText(),
               "Synthetic Northline receipt",
             );
+
             p.synthetic = true;
             onReady(p);
           }}
