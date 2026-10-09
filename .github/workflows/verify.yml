@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.LOCAL_CI_ENABLED == 'true' && fromJSON('["self-hosted","linux","x64","omarchy-ci"]') || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
