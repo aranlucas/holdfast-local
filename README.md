@@ -14,7 +14,7 @@ npm run build
 npm start
 ```
 
-Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `npm run dev` (offline caching is disabled in development).
+Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `npm run dev` at **https://holdfast.localhost** (offline caching is disabled in development). `npm run dev` runs through [Portless](https://github.com/vercel-labs/portless) (a dev dependency); its first run may ask for `sudo` to bind port 443 and trust a local certificate.
 
 The portable built-app ZIP includes `dist/` and `server.mjs`; unzip and run `node server.mjs` without installing dependencies.
 
