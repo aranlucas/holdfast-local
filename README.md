@@ -14,38 +14,9 @@ npm run build
 npm start
 ```
 
-Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `npm run dev` at **https://holdfast-local.localhost** (offline caching is disabled in development).
+Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `npm run dev` at **https://holdfast.localhost** (offline caching is disabled in development). `npm run dev` runs through [Portless](https://github.com/vercel-labs/portless) (a dev dependency); its first run may ask for `sudo` to bind port 443 and trust a local certificate.
 
 The portable built-app ZIP includes `dist/` and `server.mjs`; unzip and run `node server.mjs` without installing dependencies.
-
-### Development URL with Portless
-
-The normal `npm run dev` command uses
-[Portless](https://github.com/vercel-labs/portless/tree/v0.15.7) for a stable local URL.
-Install its CLI once with **Node.js 24 or newer** (within this project's supported
-range), then run:
-
-```sh
-npm install -g portless@0.15.7
-npm run dev
-```
-
-Open **https://holdfast-local.localhost** with the default proxy settings.
-Portless starts its shared proxy automatically. Its first HTTPS run creates and
-trusts a local certificate authority and may prompt for administrator privileges
-to bind port 443 or update local hostname entries. Start it from an interactive
-terminal and review those prompts. `portless doctor` diagnoses local setup issues.
-
-Portless supplies Vite with a free port, a loopback host, and `--strictPort`.
-The development command omits the usual fixed port; the injected CLI port takes
-precedence over any port in `vite.config.ts`.
-
-Linked Git worktrees receive a branch-name prefix, such as
-`https://fix-ui.holdfast-local.localhost`; use the URL Portless prints.
-
-Browser storage and offline caches belong to each origin. Existing data at a
-numbered localhost URL stays there; use the app's export/import flow when available
-to move data to the named URL.
 
 ## Try it in one minute
 
