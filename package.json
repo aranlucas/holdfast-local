@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 4319 --strictPort",
-    "dev:portless": "portless run --name holdfast-local vite",
+    "dev": "portless run --name holdfast-local vite",
+    "dev:direct": "vite --host 127.0.0.1 --port 4319 --strictPort",
     "build": "tsc -b && vite build && node scripts-build-sw.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 4319 --strictPort",
     "start": "node server.mjs",

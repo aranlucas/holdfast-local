@@ -14,19 +14,20 @@ npm run build
 npm start
 ```
 
-Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `npm run dev` (offline caching is disabled in development).
+Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `npm run dev` at **https://holdfast-local.localhost** (offline caching is disabled in development).
 
 The portable built-app ZIP includes `dist/` and `server.mjs`; unzip and run `node server.mjs` without installing dependencies.
 
-### Named local URL with Portless
+### Development URL with Portless
 
-[Portless](https://github.com/vercel-labs/portless/tree/v0.15.7) gives this checkout a
-stable local URL. Complete the local setup above, use **Node.js 24 or newer**
-(within this project's supported range), then run:
+The normal `npm run dev` command uses
+[Portless](https://github.com/vercel-labs/portless/tree/v0.15.7) for a stable local URL.
+Install its CLI once with **Node.js 24 or newer** (within this project's supported
+range), then run:
 
 ```sh
 npm install -g portless@0.15.7
-npm run dev:portless
+npm run dev
 ```
 
 Open **https://holdfast-local.localhost** with the default proxy settings.
@@ -36,12 +37,12 @@ to bind port 443 or update local hostname entries. Start it from an interactive
 terminal and review those prompts. `portless doctor` diagnoses local setup issues.
 
 Portless supplies Vite with a free port, a loopback host, and `--strictPort`.
-This opt-in script omits the usual fixed port; the injected CLI port takes
+The development command omits the usual fixed port; the injected CLI port takes
 precedence over any port in `vite.config.ts`.
 
 Linked Git worktrees receive a branch-name prefix, such as
 `https://fix-ui.holdfast-local.localhost`; use the URL Portless prints.
-Use `npm run dev` for the existing direct-server workflow.
+Use `npm run dev:direct` to run the original localhost server without Portless.
 
 Browser storage and offline caches belong to each origin. Existing data at a
 numbered localhost URL stays there; use the app's export/import flow when available
