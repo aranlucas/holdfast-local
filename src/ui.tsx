@@ -13,9 +13,9 @@ export function Modal({
   children: ReactNode;
   wide?: boolean;
 }) {
-  const ref = useRef<HTMLDialogElement>(null),
-    heading = useRef<HTMLHeadingElement>(null),
-    id = useId();
+  const ref = useRef<HTMLDialogElement>(null);
+    const heading = useRef<HTMLHeadingElement>(null);
+    const id = useId();
 
   useEffect(() => {
     const active = document.activeElement;
@@ -41,7 +41,7 @@ export function Modal({
       className={`modal ${wide ? "wide" : ""}`}
       aria-labelledby={id}
       onKeyDown={(e) => {
-        if (e.key !== "Tab") return;
+        if (e.key !== "Tab") {return;}
 
         const nodes = Array.from(
           ref.current!.querySelectorAll<HTMLElement>(
@@ -49,8 +49,8 @@ export function Modal({
           ),
         ).filter((node) => node.offsetParent !== null);
 
-        const first = nodes[0],
-          last = nodes[nodes.length - 1];
+        const first = nodes[0];
+          const last = nodes.at(-1);
 
         if (
           e.shiftKey &&

@@ -21,10 +21,10 @@ export function Privacy({
   onClear: () => Promise<void>;
   busy: boolean;
 }) {
-  const [error, setError] = useState(""),
-    [working, setWorking] = useState(false),
-    [clear, setClear] = useState(false),
-    [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+    const [working, setWorking] = useState(false);
+    const [clear, setClear] = useState(false);
+    const [success, setSuccess] = useState("");
 
   const file = useRef<HTMLInputElement>(null);
 
@@ -47,7 +47,8 @@ export function Privacy({
   }
 
   async function restore(f?: File) {
-    if (!f) return;
+    if (!f) {return;}
+
     setWorking(true);
     setError("");
     setSuccess("");
@@ -67,7 +68,7 @@ export function Privacy({
     } finally {
       setWorking(false);
 
-      if (file.current) file.current.value = "";
+      if (file.current) {file.current.value = "";}
     }
   }
 

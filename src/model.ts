@@ -152,10 +152,12 @@ export function blankPurchase(): Purchase {
 }
 
 export function isDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {return false;}
+
   const [y, m, d] = value.split("-").map(Number);
 
-  if (y < 1900 || y > 2199) return false;
+  if (y < 1900 || y > 2199) {return false;}
+
   const date = new Date(Date.UTC(y, m - 1, d));
 
   return (
@@ -167,7 +169,7 @@ export function isDate(value: string): boolean {
 
 export function dayNumber(value: string): number {
   if (!isDate(value))
-    throw new Error("Enter a valid calendar date between 1900 and 2199.");
+    {throw new Error("Enter a valid calendar date between 1900 and 2199.");}
 
   return Date.parse(`${value}T00:00:00Z`) / 86400000;
 }
@@ -178,7 +180,7 @@ export function addDays(value: string, days: number): string {
     .slice(0, 10);
 
   if (!isDate(date))
-    throw new Error("Calculated date is outside the supported range.");
+    {throw new Error("Calculated date is outside the supported range.");}
 
   return date;
 }
@@ -193,7 +195,7 @@ export function addMonths(value: string, months: number): string {
     .slice(0, 10);
 
   if (!isDate(date))
-    throw new Error("Calculated date is outside the supported range.");
+    {throw new Error("Calculated date is outside the supported range.");}
 
   return date;
 }
@@ -212,7 +214,7 @@ export function todayInZone(zone?: string, now = new Date()): string {
 }
 
 export function formatDate(date: string | null, long = false): string {
-  if (!date || !isDate(date)) return "Not known";
+  if (!date || !isDate(date)) {return "Not known";}
 
   return new Intl.DateTimeFormat("en-US", {
     month: long ? "long" : "short",
@@ -226,23 +228,23 @@ export function returnDeadline(p: Purchase): Deadline {
   const rule = p.policy;
 
   if (rule.returnMode === "unknown")
-    return {
+    {return {
       date: null,
       state: "unknown",
       explanation:
         "No confirmed return rule. Check the item-specific policy with the merchant.",
-    };
+    };}
 
   if (rule.returnMode === "none")
-    return {
+    {return {
       date: null,
       state: "none",
       explanation:
         "You recorded that the stated policy does not offer a return window for this item.",
-    };
+    };}
 
   if (rule.returnMode === "date")
-    return isDate(rule.returnDate)
+    {return isDate(rule.returnDate)
       ? {
           date: rule.returnDate,
           state: "known",
@@ -252,26 +254,27 @@ export function returnDeadline(p: Purchase): Deadline {
           date: null,
           state: "unknown",
           explanation: "The exact return date is missing or invalid.",
-        };
+        };}
+
   const start = rule.startOn === "purchase" ? p.purchaseDate : p.arrivalDate;
 
   if (!isDate(start))
-    return {
+    {return {
       date: null,
       state: "unknown",
       explanation: `The ${rule.startOn === "purchase" ? "purchase" : "delivery"} date is missing. No deadline calculated.`,
-    };
+    };}
 
   if (
     !Number.isInteger(rule.returnDays) ||
     rule.returnDays < 1 ||
     rule.returnDays > 3650
   )
-    return {
+    {return {
       date: null,
       state: "unknown",
       explanation: "A valid day window is missing.",
-    };
+    };}
 
   try {
     return {
@@ -293,22 +296,22 @@ export function warrantyDeadline(p: Purchase): Deadline {
   const rule = p.policy;
 
   if (rule.warrantyMode === "unknown")
-    return {
+    {return {
       date: null,
       state: "unknown",
       explanation:
         "No confirmed warranty duration. Coverage and conditions need verification.",
-    };
+    };}
 
   if (rule.warrantyMode === "none")
-    return {
+    {return {
       date: null,
       state: "none",
       explanation: "You recorded no stated warranty for this item.",
-    };
+    };}
 
   if (rule.warrantyMode === "date")
-    return isDate(rule.warrantyDate)
+    {return isDate(rule.warrantyDate)
       ? {
           date: rule.warrantyDate,
           state: "known",
@@ -318,28 +321,28 @@ export function warrantyDeadline(p: Purchase): Deadline {
           date: null,
           state: "unknown",
           explanation: "The exact warranty date is missing or invalid.",
-        };
+        };}
 
   const start =
     rule.warrantyStartOn === "purchase" ? p.purchaseDate : p.arrivalDate;
 
   if (!isDate(start))
-    return {
+    {return {
       date: null,
       state: "unknown",
       explanation: `The ${rule.warrantyStartOn === "purchase" ? "purchase" : "delivery"} date is missing.`,
-    };
+    };}
 
   if (
     !Number.isInteger(rule.warrantyMonths) ||
     rule.warrantyMonths < 1 ||
     rule.warrantyMonths > 1200
   )
-    return {
+    {return {
       date: null,
       state: "unknown",
       explanation: "A valid month duration is missing.",
-    };
+    };}
 
   try {
     return {
@@ -368,26 +371,26 @@ type ReturnStatus = { label: string; tone: string; key: string };
 
 export function returnStatus(p: Purchase, today = todayInZone()): ReturnStatus {
   if (p.outcome !== "active")
-    return {
+    {return {
       label: p.outcome === "returned" ? "Returned" : "Kept",
       tone: "muted",
       key: "closed",
-    };
+    };}
 
-  const deadline = returnDeadline(p),
-    left = daysLeft(deadline.date, today);
+  const deadline = returnDeadline(p);
+    const left = daysLeft(deadline.date, today);
 
   if (deadline.state === "none")
-    return { label: "No stated window", tone: "muted", key: "unknown" };
+    {return { label: "No stated window", tone: "muted", key: "unknown" };}
 
   if (left === null)
-    return { label: "Policy needed", tone: "unknown", key: "unknown" };
+    {return { label: "Policy needed", tone: "unknown", key: "unknown" };}
 
   if (left < 0)
-    return { label: "Recorded date passed", tone: "muted", key: "passed" };
+    {return { label: "Recorded date passed", tone: "muted", key: "passed" };}
 
   if (left === 0)
-    return { label: "Recorded date is today", tone: "urgent", key: "soon" };
+    {return { label: "Recorded date is today", tone: "urgent", key: "soon" };}
 
   return {
     label: left === 1 ? "1 day left" : `${left} days left`,
@@ -397,7 +400,7 @@ export function returnStatus(p: Purchase, today = todayInZone()): ReturnStatus {
 }
 
 export function money(p: Pick<Purchase, "amount" | "currency">): string {
-  if (!p.amount) return "Amount not entered";
+  if (!p.amount) {return "Amount not entered";}
 
   try {
     return new Intl.NumberFormat("en-US", {
@@ -412,31 +415,32 @@ export function money(p: Pick<Purchase, "amount" | "currency">): string {
 export function validatePurchase(p: Purchase): string[] {
   const errors: string[] = [];
 
-  if (!p.merchant.trim()) errors.push("Enter the merchant.");
+  if (!p.merchant.trim()) {errors.push("Enter the merchant.");}
 
-  if (!p.item.trim()) errors.push("Enter the item you are tracking.");
+  if (!p.item.trim()) {errors.push("Enter the item you are tracking.");}
 
   if (!isDate(p.purchaseDate))
-    errors.push("Enter a valid purchase date between 1900 and 2199.");
+    {errors.push("Enter a valid purchase date between 1900 and 2199.");}
 
   if (p.arrivalDate && !isDate(p.arrivalDate))
-    errors.push("Enter a valid delivery date.");
+    {errors.push("Enter a valid delivery date.");}
 
   if (
     isDate(p.purchaseDate) &&
     isDate(p.arrivalDate) &&
     p.arrivalDate < p.purchaseDate
   )
-    errors.push("Delivery cannot be before the purchase.");
+    {errors.push("Delivery cannot be before the purchase.");}
 
   if (
     p.amount !== "" &&
     (!/^\d+(\.\d{1,2})?$/.test(p.amount) || Number(p.amount) > 1e9)
   )
-    errors.push("Enter a valid amount with at most two decimal places.");
+    {errors.push("Enter a valid amount with at most two decimal places.");}
 
   if (!/^[A-Z]{3}$/.test(p.currency))
-    errors.push("Choose a three-letter currency code.");
+    {errors.push("Choose a three-letter currency code.");}
+
   const q = p.policy;
 
   if (
@@ -445,15 +449,15 @@ export function validatePurchase(p: Purchase): string[] {
       (q.warrantyMode === "months" && q.warrantyStartOn === "arrival")) &&
     !isDate(p.arrivalDate)
   )
-    errors.push(
+    {errors.push(
       "Enter the delivery date used by your rule, or choose a purchase-date rule.",
-    );
+    );}
 
   if (
     q.returnMode === "days" &&
     (!Number.isInteger(q.returnDays) || q.returnDays < 1 || q.returnDays > 3650)
   )
-    errors.push("Return days must be a whole number from 1 to 3650.");
+    {errors.push("Return days must be a whole number from 1 to 3650.");}
 
   if (
     q.warrantyMode === "months" &&
@@ -461,25 +465,25 @@ export function validatePurchase(p: Purchase): string[] {
       q.warrantyMonths < 1 ||
       q.warrantyMonths > 1200)
   )
-    errors.push("Warranty months must be a whole number from 1 to 1200.");
+    {errors.push("Warranty months must be a whole number from 1 to 1200.");}
 
   if (q.returnMode === "date" && !isDate(q.returnDate))
-    errors.push("Enter the exact return date.");
+    {errors.push("Enter the exact return date.");}
 
   if (q.warrantyMode === "date" && !isDate(q.warrantyDate))
-    errors.push("Enter the exact warranty date.");
+    {errors.push("Enter the exact warranty date.");}
 
   if (
     (q.returnMode !== "unknown" || q.warrantyMode !== "unknown") &&
     !q.sourceLabel.trim()
   )
-    errors.push("Give the policy a source label so its origin stays visible.");
+    {errors.push("Give the policy a source label so its origin stays visible.");}
 
   if (
     (q.returnMode !== "unknown" || q.warrantyMode !== "unknown") &&
     !q.appliesTo.trim()
   )
-    errors.push("State which item this policy applies to.");
+    {errors.push("State which item this policy applies to.");}
 
   if (
     (q.returnMode === "date" &&
@@ -489,21 +493,21 @@ export function validatePurchase(p: Purchase): string[] {
       isDate(q.warrantyDate) &&
       q.warrantyDate < p.purchaseDate)
   )
-    errors.push("A policy end date cannot be before the purchase date.");
+    {errors.push("A policy end date cannot be before the purchase date.");}
 
   if (
     q.returnMode === "days" &&
     returnDeadline(p).state === "unknown" &&
     isDate(q.startOn === "purchase" ? p.purchaseDate : p.arrivalDate)
   )
-    errors.push("The return date is outside the supported range.");
+    {errors.push("The return date is outside the supported range.");}
 
   if (
     q.warrantyMode === "months" &&
     warrantyDeadline(p).state === "unknown" &&
     isDate(q.warrantyStartOn === "purchase" ? p.purchaseDate : p.arrivalDate)
   )
-    errors.push("The warranty date is outside the supported range.");
+    {errors.push("The warranty date is outside the supported range.");}
 
   return errors;
 }

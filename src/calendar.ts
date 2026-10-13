@@ -3,18 +3,18 @@ import type { Purchase } from "./model";
 
 function textValue(value: string): string {
   return value
-    .replace(/\\/g, "\\\\")
-    .replace(/\r\n|\r|\n/g, "\\n")
-    .replace(/[,;]/g, "\\$&")
-    .replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
+    .replaceAll('\\', String.raw`\\`)
+    .replaceAll(/\r\n|\r|\n/g, String.raw`\n`)
+    .replaceAll(/[,;]/g, String.raw`\$&`)
+    .replaceAll(/[\u0000-\u0008\x0B-\u001F\x7F]/g, "");
 }
 
 function fold(line: string): string {
   const encoder = new TextEncoder();
 
-  let part = "",
-    length = 0,
-    result = "";
+  let part = "";
+    let length = 0;
+    let result = "";
 
   for (const char of line) {
     const size = encoder.encode(char).length;
@@ -54,7 +54,7 @@ export function calendarText(
 ): string {
   const stamp = now
     .toISOString()
-    .replace(/[-:]/g, "")
+    .replaceAll(/[-:]/g, "")
     .replace(/\.\d{3}/, "");
 
   const lines = [
@@ -80,8 +80,8 @@ export function calendarText(
       "BEGIN:VEVENT",
       `UID:${uid}-${e.kind}@holdfast.local`,
       `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${date.replace(/-/g, "")}`,
-      `DTEND;VALUE=DATE:${end.replace(/-/g, "")}`,
+      `DTSTART;VALUE=DATE:${date.replaceAll('-', "")}`,
+      `DTEND;VALUE=DATE:${end.replaceAll('-', "")}`,
       `SUMMARY:${textValue(`Recorded ${e.kind} end · ${e.p.item}`)}`,
       `DESCRIPTION:${textValue(`${e.p.merchant}\nPolicy source: ${e.p.policy.sourceLabel || "User-recorded source"}\n${e.deadline.explanation}\nPlanning aid. Verify item eligibility, terms and final-day cutoff with the merchant. Exported dates do not update automatically.`)}`,
       "CLASS:PRIVATE",

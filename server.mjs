@@ -2,9 +2,11 @@ import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { resolve, extname } from "node:path";
 
-const root = resolve("dist"),
-  port = Number(process.env.PORT || 4319),
-  host = process.env.HOST || "127.0.0.1";
+const root = resolve("dist");
+
+  const port = Number(process.env.PORT || 4319);
+
+  const host = process.env.HOST || "127.0.0.1";
 
 const mime = {
   ".html": "text/html; charset=utf-8",
@@ -59,12 +61,12 @@ createServer(async (req, res) => {
       return;
     }
 
-    if (pathname === "/") file = resolve(root, "index.html");
+    if (pathname === "/") {file = resolve(root, "index.html");}
 
     try {
-      if (!(await stat(file)).isFile()) throw new Error("Missing");
+      if (!(await stat(file)).isFile()) {throw new Error("Missing");}
     } catch {
-      if (!extname(pathname)) file = resolve(root, "index.html");
+      if (!extname(pathname)) {file = resolve(root, "index.html");}
       else {
         res.writeHead(404);
         res.end("Not found");

@@ -38,18 +38,18 @@ export function Detail({
   onSave: (p: Purchase) => Promise<void>;
   busy: boolean;
 }) {
-  const [notes, setNotes] = useState(p.notes),
-    [serial, setSerial] = useState(p.serialNumber),
-    [error, setError] = useState(""),
-    [exporting, setExporting] = useState(false),
-    [saved, setSaved] = useState(false);
+  const [notes, setNotes] = useState(p.notes);
+    const [serial, setSerial] = useState(p.serialNumber);
+    const [error, setError] = useState("");
+    const [exporting, setExporting] = useState(false);
+    const [saved, setSaved] = useState(false);
 
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const ret = returnDeadline(p),
-    war = warrantyDeadline(p),
-    status = returnStatus(p),
-    done = CHECKLIST.filter((c) => p.checklist[c.id]).length;
+  const ret = returnDeadline(p);
+    const war = warrantyDeadline(p);
+    const status = returnStatus(p);
+    const done = CHECKLIST.filter((c) => p.checklist[c.id]).length;
 
   async function save(next: Purchase) {
     setError("");
@@ -84,17 +84,18 @@ export function Detail({
   }
 
   async function attach(file?: File) {
-    if (!file) return;
+    if (!file) {return;}
 
     try {
       if (file.size > MAX_FILE_BYTES)
-        throw new Error("Evidence must be 12 MB or smaller.");
+        {throw new Error("Evidence must be 12 MB or smaller.");}
 
       if (p.attachments.length >= 10)
-        throw new Error("Each purchase can hold up to 10 documents.");
+        {throw new Error("Each purchase can hold up to 10 documents.");}
 
       if (!/\.(pdf|txt|md|png|jpe?g|webp)$/i.test(file.name))
-        throw new Error("Use a PDF, text, PNG, JPEG, or WebP document.");
+        {throw new Error("Use a PDF, text, PNG, JPEG, or WebP document.");}
+
       await save({
         ...p,
         attachments: [
@@ -111,7 +112,7 @@ export function Detail({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not attach the file.");
     } finally {
-      if (fileInput.current) fileInput.current.value = "";
+      if (fileInput.current) {fileInput.current.value = "";}
     }
   }
 
@@ -383,7 +384,7 @@ export function Detail({
               disabled={busy}
               onClick={() =>
                 void save({ ...p, notes, serialNumber: serial }).then((ok) => {
-                  if (ok) setSaved(true);
+                  if (ok) {setSaved(true);}
                 })
               }
             >
