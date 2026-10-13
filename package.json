@@ -13,7 +13,9 @@
     "format": "prettier --write src tests *.json *.ts *.mjs",
     "check:format": "prettier --check src tests *.json *.ts *.mjs",
     "lint": "oxlint .",
-    "lint:plugin": "node tools/oxlint/verify-anti-slop.mjs"
+    "lint:plugin": "node tools/oxlint/verify-anti-slop.mjs",
+    "lint:fix": "oxlint --fix",
+    "format:check": "oxfmt --check"
   },
   "dependencies": {
     "idb": "^8.0.3",
@@ -25,6 +27,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@aranlucas/oxforge": "^0.1.1",
     "@aranlucas/oxlint-plugin-anti-slop": "0.1.0",
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.58.2",
@@ -32,7 +35,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
     "ical.js": "^2.2.1",
-    "oxlint": "1.86.0",
+    "oxfmt": "^0.73.0",
+    "oxlint": "1.88.0",
+    "oxlint-tsgolint": "^7.0.2004",
     "portless": "0.15.7",
     "prettier": "^3.9.9",
     "typescript": "^5.9.3",
