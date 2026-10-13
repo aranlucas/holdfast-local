@@ -61,10 +61,10 @@ export function Verifier({
   busy: boolean;
   queueProgress?: { current: number; total: number };
 }) {
-  const [p, setP] = useState(initial),
-    [step, setStep] = useState(0),
-    [confirmed, setConfirmed] = useState([false, false, false]),
-    [errors, setErrors] = useState<string[]>([]);
+  const [p, setP] = useState(initial);
+    const [step, setStep] = useState(0);
+    const [confirmed, setConfirmed] = useState([false, false, false]);
+    const [errors, setErrors] = useState<string[]>([]);
 
   const titles = ["The purchase", "The date", "The policy"];
 
@@ -121,9 +121,9 @@ export function Verifier({
 
     setErrors([]);
 
-    if (step < 2) setStep(step + 1);
+    if (step < 2) {setStep(step + 1);}
     else
-      void onSave({
+      {void onSave({
         ...p,
         confirmedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -131,14 +131,14 @@ export function Verifier({
         setErrors([
           e instanceof Error ? e.message : "Could not save. Try again.",
         ]),
-      );
+      );}
   }
 
   return (
     <Modal
       title={initial.confirmedAt ? "Review your facts" : "Verify three facts"}
       onClose={() => {
-        if (!busy) onClose();
+        if (!busy) {onClose();}
       }}
       wide
     >
@@ -554,7 +554,7 @@ export function Verifier({
                 if (step) {
                   setStep(step - 1);
                   setErrors([]);
-                } else onClose();
+                } else {onClose();}
               }}
             >
               <ArrowLeft size={16} />

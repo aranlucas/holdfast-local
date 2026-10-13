@@ -110,26 +110,26 @@ function CheckStamp() {
 }
 
 export default function App() {
-  const [purchases, setPurchases] = useState<Purchase[]>([]),
-    [page, setPage] = useState("shelf"),
-    [importing, setImporting] = useState(false),
-    [draft, setDraft] = useState<Purchase | null>(null),
-    [receipt, setReceipt] = useState<Purchase | null>(null),
-    [queue, setQueue] = useState<Purchase[]>([]),
-    [queueTotal, setQueueTotal] = useState(0),
-    [selected, setSelected] = useState<string | null>(null),
-    [busy, setBusy] = useState(false),
-    [loaded, setLoaded] = useState(false),
-    [error, setError] = useState(""),
-    [toast, setToast] = useState(""),
-    [filter, setFilter] = useState("all"),
-    [search, setSearch] = useState(""),
-    [online, setOnline] = useState(navigator.onLine),
-    [offlineReady, setOfflineReady] = useState(false),
-    [drag, setDrag] = useState(false);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+    const [page, setPage] = useState("shelf");
+    const [importing, setImporting] = useState(false);
+    const [draft, setDraft] = useState<Purchase | null>(null);
+    const [receipt, setReceipt] = useState<Purchase | null>(null);
+    const [queue, setQueue] = useState<Purchase[]>([]);
+    const [queueTotal, setQueueTotal] = useState(0);
+    const [selected, setSelected] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [loaded, setLoaded] = useState(false);
+    const [error, setError] = useState("");
+    const [toast, setToast] = useState("");
+    const [filter, setFilter] = useState("all");
+    const [search, setSearch] = useState("");
+    const [online, setOnline] = useState(navigator.onLine);
+    const [offlineReady, setOfflineReady] = useState(false);
+    const [drag, setDrag] = useState(false);
 
-  const busyRef = useRef(false),
-    importSequence = useRef(0);
+  const busyRef = useRef(false);
+    const importSequence = useRef(0);
 
   const [today, setToday] = useState(todayInZone);
   useEffect(() => {
@@ -179,7 +179,8 @@ export default function App() {
     }
   }, []);
   useEffect(() => {
-    if (!toast) return;
+    if (!toast) {return;}
+
     const timer = setTimeout(() => setToast(""), 5000);
 
     return () => clearTimeout(timer);
@@ -187,7 +188,8 @@ export default function App() {
 
   async function save(p: Purchase) {
     if (busyRef.current)
-      throw new Error("A save is still in progress. Try again in a moment.");
+      {throw new Error("A save is still in progress. Try again in a moment.");}
+
     busyRef.current = true;
     const previous = purchases;
     setBusy(true);
@@ -218,7 +220,7 @@ export default function App() {
         : "Three facts confirmed. Your purchase is saved.",
     );
 
-    if (!queue.length) setQueueTotal(0);
+    if (!queue.length) {setQueueTotal(0);}
   }
 
   function startDrafts(items: Purchase[]) {
@@ -232,20 +234,21 @@ export default function App() {
   function receiveReceipt(p: Purchase) {
     setImporting(false);
 
-    if (receiptItems(p.receiptText).length > 1) setReceipt(p);
-    else startDrafts([p]);
+    if (receiptItems(p.receiptText).length > 1) {setReceipt(p);}
+    else {startDrafts([p]);}
   }
 
   function cancelDrafts() {
-    if (busyRef.current) return;
+    if (busyRef.current) {return;}
+
     setDraft(null);
     setQueue([]);
     setQueueTotal(0);
 
     if (queueTotal)
-      setToast(
+      {setToast(
         "Unsaved items discarded. Already verified items stay on your shelf.",
-      );
+      );}
   }
 
   async function demo() {
@@ -266,7 +269,8 @@ export default function App() {
   }
 
   async function drop(file?: File) {
-    if (!file || busy) return;
+    if (!file || busy) {return;}
+
     const sequence = ++importSequence.current;
     setBusy(true);
     setError("");
@@ -274,7 +278,7 @@ export default function App() {
     try {
       const p = await readReceiptFile(file);
 
-      if (sequence === importSequence.current) receiveReceipt(p);
+      if (sequence === importSequence.current) {receiveReceipt(p);}
     } catch (e) {
       setError(
         e instanceof Error
@@ -309,8 +313,9 @@ export default function App() {
     }
   }
 
-  const soon = purchases.filter((p) => returnStatus(p, today).key === "soon"),
-    unknown = purchases.filter(
+  const soon = purchases.filter((p) => returnStatus(p, today).key === "soon");
+
+    const unknown = purchases.filter(
       (p) => returnStatus(p, today).key === "unknown" && p.outcome === "active",
     );
 
@@ -323,8 +328,8 @@ export default function App() {
           .includes(search.toLowerCase()),
     )
     .sort((a, b) => {
-      const da = returnDeadline(a).date,
-        db = returnDeadline(b).date;
+      const da = returnDeadline(a).date;
+        const db = returnDeadline(b).date;
 
       return (da || "9999").localeCompare(db || "9999");
     });
@@ -583,9 +588,9 @@ export default function App() {
                     </div>
                     <div className="purchase-list">
                       {visible.map((p) => {
-                        const status = returnStatus(p, today),
-                          ret = returnDeadline(p),
-                          war = warrantyDeadline(p);
+                        const status = returnStatus(p, today);
+                          const ret = returnDeadline(p);
+                          const war = warrantyDeadline(p);
 
                         return (
                           <button

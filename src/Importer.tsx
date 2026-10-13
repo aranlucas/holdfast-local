@@ -13,15 +13,16 @@ export function Importer({
   onClose: () => void;
   onReady: (p: Purchase) => void;
 }) {
-  const [text, setText] = useState(""),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false),
-    [drag, setDrag] = useState(false);
+  const [text, setText] = useState("");
+    const [error, setError] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [drag, setDrag] = useState(false);
 
   const input = useRef<HTMLInputElement>(null);
 
   async function fileReady(file?: File) {
-    if (!file) return;
+    if (!file) {return;}
+
     setError("");
     setBusy(true);
 
@@ -36,7 +37,7 @@ export function Importer({
     } finally {
       setBusy(false);
 
-      if (input.current) input.current.value = "";
+      if (input.current) {input.current.value = "";}
     }
   }
 
@@ -44,7 +45,7 @@ export function Importer({
     <Modal
       title="Give your receipt a home"
       onClose={() => {
-        if (!busy) onClose();
+        if (!busy) {onClose();}
       }}
     >
       <p className="modal-intro">
@@ -62,7 +63,7 @@ export function Importer({
           e.preventDefault();
           setDrag(false);
 
-          if (!busy) void fileReady(e.dataTransfer.files[0]);
+          if (!busy) {void fileReady(e.dataTransfer.files[0]);}
         }}
       >
         <Upload size={30} />

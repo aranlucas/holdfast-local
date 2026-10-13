@@ -46,9 +46,10 @@ export async function saveMany(
   try {
     const tx = database.transaction("purchases", "readwrite");
 
-    if (replace) await tx.store.clear();
+    if (replace) {await tx.store.clear();}
 
-    for (const p of purchases) await tx.store.put(p);
+    for (const p of purchases) {await tx.store.put(p);}
+
     await tx.done;
   } finally {
     database.close();

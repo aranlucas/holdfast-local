@@ -5,8 +5,8 @@ async function list(path) {
   const files = [];
 
   for (const e of await readdir(path, { withFileTypes: true })) {
-    if (e.isDirectory()) files.push(...(await list(`${path}/${e.name}`)));
-    else files.push(`${path}/${e.name}`);
+    if (e.isDirectory()) {files.push(...(await list(`${path}/${e.name}`)));}
+    else {files.push(`${path}/${e.name}`);}
   }
 
   return files;

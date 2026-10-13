@@ -80,8 +80,8 @@ test("desktop shelf, filters, timeline, packet and original data stay local", as
 }) => {
   await mkdir(evidence, { recursive: true });
 
-  const errors: string[] = [],
-    external: string[] = [];
+  const errors: string[] = [];
+    const external: string[] = [];
 
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("request", (r) => {
@@ -90,7 +90,7 @@ test("desktop shelf, filters, timeline, packet and original data stay local", as
       !r.url().startsWith("blob:") &&
       !r.url().startsWith("data:")
     )
-      external.push(r.url());
+      {external.push(r.url());}
   });
   await open(page);
   await expect(page).toHaveTitle("Holdfast · Receipts, ready");
@@ -561,7 +561,7 @@ test("write failure keeps the verified draft and succeeds on retry", async ({
     });
     IDBObjectStore.prototype.put = function (...args: Parameters<typeof put>) {
       if (window.holdfastBlockWrites)
-        throw new DOMException("Synthetic quota limit", "QuotaExceededError");
+        {throw new DOMException("Synthetic quota limit", "QuotaExceededError");}
 
       return put.apply(this, args);
     };
@@ -752,11 +752,12 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
   expect(clock.policy.returnDays).toBe(1);
 
   for (const p of data.purchases)
-    expect(
+    {expect(
       await zip
         .file(`evidence/${p.id}/${p.attachments[0].id}`)!
         .async("string"),
-    ).toBe(receipt);
+    ).toBe(receipt);}
+
   await page.getByRole("button", { name: "Timeline", exact: true }).click();
   await page.getByRole("button", { name: "Returns", exact: true }).click();
   await page.evaluate(async () => {
@@ -847,7 +848,7 @@ test("a failed second-item save retains its place and retries without duplicate 
     });
     IDBObjectStore.prototype.put = function (...args: Parameters<typeof put>) {
       if (window.holdfastBlockWrites)
-        throw new DOMException("Synthetic quota limit", "QuotaExceededError");
+        {throw new DOMException("Synthetic quota limit", "QuotaExceededError");}
 
       return put.apply(this, args);
     };

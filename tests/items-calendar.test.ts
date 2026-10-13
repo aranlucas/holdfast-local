@@ -125,17 +125,18 @@ describe("RFC 5545 date-only calendar export", () => {
   it("escapes injection, special characters and UTF-8 without splitting code points", () => {
     const p = known();
     p.id = "x\r\nBEGIN:VALARM";
-    p.item = "Café 🍋, lamp; \\ " + "暖".repeat(70) + "\r\nBEGIN:VALARM";
-    p.policy.sourceLabel = "Receipt, paper; terms\\source";
+    p.item = String.raw`Café 🍋, lamp; \ ` + "暖".repeat(70) + "\r\nBEGIN:VALARM";
+    p.policy.sourceLabel = String.raw`Receipt, paper; terms\source`;
     const text = calendarText([p]);
     const events = parse(text);
     expect(new ICAL.Event(events[0]).summary).toBe(
-      `Recorded return end · ${p.item.replace(/\r\n/g, "\n")}`,
+      `Recorded return end · ${p.item.replaceAll('\r\n', "\n")}`,
     );
     expect(events[0].getAllSubcomponents("valarm")).toHaveLength(0);
 
     for (const line of text.split("\r\n"))
-      expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+      {expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);}
+
     expect(text).not.toContain("�");
   });
   it("excludes receipt, order, serial, condition notes and attachments", () => {
