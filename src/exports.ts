@@ -32,7 +32,10 @@ export function escapeHTML(value: string): string {
 }
 
 function serializable(p: Purchase) {
-  return { ...p, attachments: p.attachments.map(({ blob: _, ...a }) => a) };
+  return {
+    ...p,
+    attachments: p.attachments.map(({ id, name, type, size }) => ({ id, name, type, size })),
+  };
 }
 
 export function packetHTML(p: Purchase): string {
