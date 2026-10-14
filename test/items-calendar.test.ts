@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import ICAL from "ical.js";
-import { extractReceipt } from "../src/extraction";
-import { itemDraft, receiptItems } from "../src/receipt-items";
-import { calendarText } from "../src/calendar";
-import { blankPurchase } from "../src/model";
+import { extractReceipt } from "@/extraction";
+import { itemDraft, receiptItems } from "@/receipt-items";
+import { calendarText } from "@/calendar";
+import { blankPurchase } from "@/model";
 
 const basket =
   "Merchant: Sample Shop\nPurchase date: 2024-02-28\nOrder: DEMO-1\nItem: Clock — EUR 12.00\nProduct: Lamp\nTax: EUR 4.20\nTotal: EUR 64.20\nReturn rules differ by product.";

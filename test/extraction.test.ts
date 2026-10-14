@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
-import { pdfPageText } from "../src/extraction";
+import { pdfPageText } from "@/extraction";
 
 function textItem(str: string, hasEOL = false): TextItem {
   return {

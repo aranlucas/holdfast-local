@@ -1,4 +1,4 @@
-import { required } from "./required";
+import { required } from "@test/helpers/required";
 import { describe, expect, it } from "vitest";
 import {
   addDays,
@@ -11,9 +11,9 @@ import {
   todayInZone,
   validatePurchase,
   warrantyDeadline,
-} from "../src/model";
-import { extractReceipt, readReceiptFile } from "../src/extraction";
-import { demoPurchases, samplePolicy, sampleText } from "../src/samples";
+} from "@/model";
+import { extractReceipt, readReceiptFile } from "@/extraction";
+import { demoPurchases, samplePolicy, sampleText } from "@/samples";
 import {
   escapeHTML,
   exportBackup,
@@ -22,7 +22,7 @@ import {
   packetHTML,
   safeName,
   validateBackupRecord,
-} from "../src/exports";
+} from "@/exports";
 import JSZip from "jszip";
 
 function fixture() {

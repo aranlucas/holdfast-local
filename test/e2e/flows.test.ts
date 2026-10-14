@@ -1,6 +1,6 @@
-import { required } from "./required";
+import { required } from "@test/helpers/required";
 import { z } from "zod";
-import { validateBackupRecord } from "../src/exports";
+import { validateBackupRecord } from "@/exports";
 
 declare global {
   interface Window {
