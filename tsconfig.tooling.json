@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "types": ["node"]
+  },
+  "include": [
+    "server.mjs",
+    "scripts-build-sw.mjs",
+    "tools/oxlint/*.mjs",
+    "playwright.config.ts",
+    "tests/*.e2e.ts"
+  ]
+}

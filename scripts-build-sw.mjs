@@ -1,6 +1,10 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
+/**
+ * @param {string} path
+ * @returns {Promise<string[]>}
+ */
 async function list(path) {
   const files = [];
 
