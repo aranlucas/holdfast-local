@@ -154,7 +154,17 @@ export default function App() {
   }
 
   useEffect(() => {
-    load().catch(() => setError("Device storage could not be loaded. Try again."));
+    loadPurchases()
+      .then((loadedPurchases) => {
+        setPurchases(loadedPurchases);
+
+        return setLoaded(true);
+      })
+      .catch(() =>
+        setError(
+          "Device storage is unavailable. Your saved cabinet could not be loaded. Retry, or allow browser storage for this address.",
+        ),
+      );
     const net = () => setOnline(navigator.onLine);
     window.addEventListener("online", net);
     window.addEventListener("offline", net);
@@ -441,7 +451,13 @@ export default function App() {
             <div className="app-error">
               <Notice kind="error">{error}</Notice>
               {!loaded ? (
-                <button type="button" className="button secondary" onClick={() => void load()}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => {
+                    load().catch(() => setError("Device storage could not be loaded. Try again."));
+                  }}
+                >
                   Retry device storage
                 </button>
               ) : (

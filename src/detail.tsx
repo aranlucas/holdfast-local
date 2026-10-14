@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   CalendarDays,
@@ -39,19 +39,22 @@ export function Detail({ p, onClose, onEdit, onSave, busy }: DetailProps) {
   const status = returnStatus(p);
   const done = CHECKLIST.filter((c) => p.checklist[c.id]).length;
 
-  async function save(next: Purchase) {
-    setError("");
+  const save = useCallback(
+    async (next: Purchase) => {
+      setError("");
 
-    try {
-      await onSave({ ...next, updatedAt: new Date().toISOString() });
+      try {
+        await onSave({ ...next, updatedAt: new Date().toISOString() });
 
-      return true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save. Try again.");
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not save. Try again.");
 
-      return false;
-    }
-  }
+        return false;
+      }
+    },
+    [onSave],
+  );
 
   async function packet() {
     setExporting(true);
