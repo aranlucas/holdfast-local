@@ -6,7 +6,7 @@ import { formatDate, returnDeadline, validatePurchase, warrantyDeadline } from "
 import { samplePolicy } from "./samples";
 import { Field, Modal, Notice } from "./ui";
 
-function EvidenceLine({ p, field }: { p: Purchase; field: EvidenceKey }) {
+function EvidenceLine({ p, field }: EvidenceLineProps) {
   const v = p.evidence[field];
 
   return (
@@ -36,19 +36,7 @@ function EvidenceLine({ p, field }: { p: Purchase; field: EvidenceKey }) {
   );
 }
 
-export function Verifier({
-  initial,
-  onClose,
-  onSave,
-  busy,
-  queueProgress,
-}: {
-  initial: Purchase;
-  onClose: () => void;
-  onSave: (p: Purchase) => Promise<void>;
-  busy: boolean;
-  queueProgress?: { current: number; total: number };
-}) {
+export function Verifier({ initial, onClose, onSave, busy, queueProgress }: VerifierProps) {
   const [p, setP] = useState(initial);
   const [step, setStep] = useState(0);
   const [confirmed, setConfirmed] = useState([false, false, false]);
@@ -58,14 +46,14 @@ export function Verifier({
 
   function field<K extends keyof Purchase>(key: K, value: Purchase[K]) {
     setP((old) => {
-      const next = { ...old, [key]: value };
+      const updated = { ...old, [key]: value };
 
       const evidenceField = (["merchant", "item", "purchaseDate", "amount"] as const).find(
-        (field) => field === key,
+        (candidate) => candidate === key,
       );
 
       if (evidenceField !== undefined) {
-        next.evidence = {
+        updated.evidence = {
           ...old.evidence,
           [evidenceField]: {
             ...old.evidence[evidenceField],
@@ -75,7 +63,7 @@ export function Verifier({
         };
       }
 
-      return next;
+      return updated;
     });
     setConfirmed((old) => old.map((v, i) => (i >= step ? false : v)));
   }
@@ -522,3 +510,15 @@ export function Verifier({
     </Modal>
   );
 }
+
+type QueueProgress = { current: number; total: number };
+
+type EvidenceLineProps = { p: Purchase; field: EvidenceKey };
+
+type VerifierProps = {
+  initial: Purchase;
+  onClose: () => void;
+  onSave: (p: Purchase) => Promise<void>;
+  busy: boolean;
+  queueProgress?: QueueProgress;
+};

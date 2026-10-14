@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ICAL from "ical.js";
 import { extractReceipt } from "../src/extraction";
-import { itemDraft, receiptItems } from "../src/receiptItems";
+import { itemDraft, receiptItems } from "../src/receipt-items";
 import { calendarText } from "../src/calendar";
 import { blankPurchase } from "../src/model";
 
@@ -83,7 +83,7 @@ function known() {
 }
 
 function parse(text: string) {
-  return new ICAL.Component(ICAL.parse(text)).getAllSubcomponents("vevent");
+  return ICAL.Component.fromString(text).getAllSubcomponents("vevent");
 }
 
 describe("RFC 5545 date-only calendar export", () => {

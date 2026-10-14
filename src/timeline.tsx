@@ -5,13 +5,7 @@ import { daysLeft, formatDate, returnDeadline, todayInZone, warrantyDeadline } f
 import { calendarBlob, calendarEvents } from "./calendar";
 import { downloadBlob } from "./exports";
 
-export function Timeline({
-  purchases,
-  onSelect,
-}: {
-  purchases: Purchase[];
-  onSelect: (id: string) => void;
-}) {
+export function Timeline({ purchases, onSelect }: TimelineProps) {
   const [kind, setKind] = useState("all");
   const today = todayInZone();
   const active = purchases.filter((p) => p.outcome === "active");
@@ -21,8 +15,15 @@ export function Timeline({
       { p, kind: "return", deadline: returnDeadline(p) },
       { p, kind: "warranty", deadline: warrantyDeadline(p) },
     ])
-    .filter((e) => e.deadline.date && (kind === "all" || e.kind === kind))
-    .sort((a, b) => a.deadline.date!.localeCompare(b.deadline.date!));
+    .flatMap((e) => {
+      const { date } = e.deadline;
+      const left = daysLeft(date, today);
+
+      return date && left !== null && (kind === "all" || e.kind === kind)
+        ? [{ ...e, date, left }]
+        : [];
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   const unknown = purchases.filter(
     (p) =>
@@ -76,7 +77,7 @@ export function Timeline({
       </div>
       <div className="event-list">
         {events.map((e) => {
-          const left = daysLeft(e.deadline.date, today)!;
+          const { left } = e;
 
           return (
             <button
@@ -87,7 +88,7 @@ export function Timeline({
             >
               <div className="event-date">
                 <strong>{formatDate(e.deadline.date).split(",")[0]}</strong>
-                <small>{e.deadline.date!.slice(0, 4)}</small>
+                <small>{e.date.slice(0, 4)}</small>
               </div>
               <span className="event-dot" />
               <div className="event-body">
@@ -136,3 +137,8 @@ export function Timeline({
     </>
   );
 }
+
+type TimelineProps = {
+  purchases: Purchase[];
+  onSelect: (id: string) => void;
+};

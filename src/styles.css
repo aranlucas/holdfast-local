@@ -137,6 +137,10 @@ small {
   z-index: 10;
 }
 .brand {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 10px;

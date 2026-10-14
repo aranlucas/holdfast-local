@@ -4,17 +4,7 @@ import type { Purchase } from "./model";
 import { downloadBlob, exportBackup, importBackup } from "./exports";
 import { Notice } from "./ui";
 
-export function Privacy({
-  purchases,
-  onRestore,
-  onClear,
-  busy,
-}: {
-  purchases: Purchase[];
-  onRestore: (p: Purchase[]) => Promise<void>;
-  onClear: () => Promise<void>;
-  busy: boolean;
-}) {
+export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
   const [clear, setClear] = useState(false);
@@ -105,7 +95,7 @@ export function Privacy({
             <span>Current cabinet</span>
             <strong>{location.origin}</strong>
             <span>Date display zone</span>
-            <strong>{Intl.DateTimeFormat().resolvedOptions().timeZone}</strong>
+            <strong>{new Intl.DateTimeFormat().resolvedOptions().timeZone}</strong>
             <span>Saved purchases</span>
             <strong>{purchases.length}</strong>
           </div>
@@ -167,7 +157,8 @@ export function Privacy({
                   void onClear()
                     .then(() => {
                       setClear(false);
-                      setSuccess("This device cabinet is now empty.");
+
+                      return setSuccess("This device cabinet is now empty.");
                     })
                     .catch((e) =>
                       setError(e instanceof Error ? e.message : "Could not clear. Try again."),
@@ -196,3 +187,10 @@ export function Privacy({
     </>
   );
 }
+
+type PrivacyProps = {
+  purchases: Purchase[];
+  onRestore: (p: Purchase[]) => Promise<void>;
+  onClear: () => Promise<void>;
+  busy: boolean;
+};
