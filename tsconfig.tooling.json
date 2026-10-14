@@ -10,6 +10,7 @@
     "scripts-build-sw.mjs",
     "tools/oxlint/*.mjs",
     "playwright.config.ts",
-    "tests/*.e2e.ts"
+    "tests/*.e2e.ts",
+    "test/**/*.mjs"
   ]
 }
