@@ -8,7 +8,6 @@
   "include": [
     "server.mjs",
     "scripts-build-sw.mjs",
-    "tools/oxlint/*.mjs",
     "playwright.config.ts",
     "test/e2e/**/*.test.ts",
     "test/**/*.mjs",

@@ -225,9 +225,18 @@ describe("portable, safe proof and backup exports", () => {
     ).toBe("abc");
     expect(zip.file("proof-packet.html")).not.toBeNull();
     expect(zip.file("checklist.md")).not.toBeNull();
-    expect(
-      await required(zip.file("purchase.json"), "Expected fixture API result").async("string"),
-    ).not.toContain('"blob"');
+
+    const purchaseJson = await required(
+      zip.file("purchase.json"),
+      "Expected fixture API result",
+    ).async("string");
+
+    expect(purchaseJson).not.toContain('"blob"');
+    expect(purchaseJson).toContain('"id": "original"');
+    expect(purchaseJson).toContain('"name": "receipt.txt"');
+    expect(purchaseJson).toContain('"type": "text/plain"');
+    expect(purchaseJson).toContain('"size": 3');
+    expect(await p.attachments[0].blob.text()).toBe("abc");
   });
   it("round trips purchases, checklist state and original evidence", async () => {
     const p = fixture();
