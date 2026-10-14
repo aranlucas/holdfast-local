@@ -14,16 +14,13 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-    const heading = useRef<HTMLHeadingElement>(null);
-    const id = useId();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const id = useId();
 
   useEffect(() => {
     const active = document.activeElement;
 
-    const previous =
-      active instanceof HTMLElement || active instanceof SVGElement
-        ? active
-        : null;
+    const previous = active instanceof HTMLElement || active instanceof SVGElement ? active : null;
 
     const dialog = ref.current;
     dialog?.showModal();
@@ -41,7 +38,9 @@ export function Modal({
       className={`modal ${wide ? "wide" : ""}`}
       aria-labelledby={id}
       onKeyDown={(e) => {
-        if (e.key !== "Tab") {return;}
+        if (e.key !== "Tab") {
+          return;
+        }
 
         const nodes = Array.from(
           ref.current!.querySelectorAll<HTMLElement>(
@@ -50,12 +49,11 @@ export function Modal({
         ).filter((node) => node.offsetParent !== null);
 
         const first = nodes[0];
-          const last = nodes.at(-1);
+        const last = nodes.at(-1);
 
         if (
           e.shiftKey &&
-          (document.activeElement === first ||
-            document.activeElement === heading.current)
+          (document.activeElement === first || document.activeElement === heading.current)
         ) {
           e.preventDefault();
           last?.focus();
@@ -73,11 +71,7 @@ export function Modal({
         <h2 id={id} ref={heading} tabIndex={-1}>
           {title}
         </h2>
-        <button
-          className="icon-button"
-          aria-label="Close dialog"
-          onClick={onClose}
-        >
+        <button type="button" className="icon-button" aria-label="Close dialog" onClick={onClose}>
           <X size={21} />
         </button>
       </div>
@@ -121,10 +115,7 @@ export function Notice({
   kind?: "info" | "error" | "success";
 }) {
   return (
-    <div
-      className={`notice ${kind}`}
-      role={kind === "error" ? "alert" : undefined}
-    >
+    <div className={`notice ${kind}`} role={kind === "error" ? "alert" : undefined}>
       {children}
     </div>
   );

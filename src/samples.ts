@@ -16,16 +16,12 @@ export function samplePolicy(item = "Studio wireless headphones") {
     sourceLabel: "Fictional Northline Audio sample policy",
     appliesTo: item,
     text: "Synthetic policy for this item only: 30 calendar days after purchase, purchase date is day 0. Original contents required. Stated warranty term: 12 calendar months from purchase. This is not a real merchant policy.",
-    notes:
-      "Check condition, fees, exclusions, and the final-day cutoff with the merchant.",
+    notes: "Check condition, fees, exclusions, and the final-day cutoff with the merchant.",
   };
 }
 
 export function demoPurchases(today = todayInZone()): Purchase[] {
-  const headphones = extractReceipt(
-    sampleText(today),
-    "Synthetic Northline receipt",
-  );
+  const headphones = extractReceipt(sampleText(today), "Synthetic Northline receipt");
 
   headphones.policy = samplePolicy();
   headphones.synthetic = true;

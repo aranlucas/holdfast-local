@@ -22,10 +22,7 @@ export function safeName(name: string): string {
 export function escapeHTML(value: string): string {
   return value.replaceAll(
     /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        c
-      ]!,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
   );
 }
 
@@ -35,18 +32,15 @@ function serializable(p: Purchase) {
 
 export function packetHTML(p: Purchase): string {
   const e = escapeHTML;
-    const ret = returnDeadline(p);
-    const war = warrantyDeadline(p);
+  const ret = returnDeadline(p);
+  const war = warrantyDeadline(p);
 
   const fields = [
     ["Merchant", p.merchant],
     ["Item", p.item],
     ["Amount", money(p)],
     ["Purchased", formatDate(p.purchaseDate, true)],
-    [
-      "Delivered",
-      p.arrivalDate ? formatDate(p.arrivalDate, true) : "Not recorded",
-    ],
+    ["Delivered", p.arrivalDate ? formatDate(p.arrivalDate, true) : "Not recorded"],
     ["Order / receipt number", p.orderNumber || "Not recorded"],
     ["Serial number", p.serialNumber || "Not recorded"],
   ];
@@ -78,10 +72,7 @@ export async function exportPacket(p: Purchase): Promise<Blob> {
   const zip = new JSZip();
   zip.file("proof-packet.html", packetHTML(p));
   zip.file("purchase.json", JSON.stringify(serializable(p), null, 2));
-  zip.file(
-    "receipt.txt",
-    p.receiptText || "No text extracted. Original attachment retained.",
-  );
+  zip.file("receipt.txt", p.receiptText || "No text extracted. Original attachment retained.");
   zip.file(
     "policy.txt",
     `Source: ${p.policy.sourceLabel || "Unknown"}\nApplies to: ${p.policy.appliesTo || p.item}\n\n${p.policy.text}\n\nNotes: ${p.policy.notes}`,
@@ -91,11 +82,9 @@ export async function exportPacket(p: Purchase): Promise<Blob> {
     `# ${p.item} — preparation checklist\n\n${CHECKLIST.map((c) => `- [${p.checklist[c.id] ? "x" : " "}] ${c.title}: ${c.description}`).join("\n")}\n\nRecorded return: ${formatDate(returnDeadline(p).date)}\nRecorded warranty: ${formatDate(warrantyDeadline(p).date)}\n\nVerify the merchant's item-specific terms and final-day cutoff. This packet is a planning aid, not an entitlement decision.`,
   );
 
-  for (const a of p.attachments)
-    {zip.file(
-      `evidence/${a.id}-${safeName(a.name)}`,
-      await a.blob.arrayBuffer(),
-    );}
+  for (const a of p.attachments) {
+    zip.file(`evidence/${a.id}-${safeName(a.name)}`, await a.blob.arrayBuffer());
+  }
 
   return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
 }
@@ -115,9 +104,11 @@ export async function exportBackup(purchases: Purchase[]): Promise<Blob> {
     ),
   );
 
-  for (const p of purchases)
-    {for (const a of p.attachments)
-      {zip.file(`evidence/${p.id}/${a.id}`, await a.blob.arrayBuffer());}}
+  for (const p of purchases) {
+    for (const a of p.attachments) {
+      zip.file(`evidence/${p.id}/${a.id}`, await a.blob.arrayBuffer());
+    }
+  }
 
   return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
 }
@@ -202,10 +193,7 @@ const backupRecord = z
   })
   .passthrough()
   .superRefine((record, context) => {
-    if (
-      new Set(record.attachments.map((item) => item.id)).size !==
-      record.attachments.length
-    ) {
+    if (new Set(record.attachments.map((item) => item.id)).size !== record.attachments.length) {
       context.addIssue({
         code: "custom",
         message: "Duplicate attachment IDs in backup.",
@@ -215,11 +203,12 @@ const backupRecord = z
     // Purchase validation uses purchase facts and policy; blobs are reconstructed from the ZIP only after metadata validation.
     const errors = validatePurchase({ ...record, attachments: [] });
 
-    if (errors.length)
-      {context.addIssue({
+    if (errors.length) {
+      context.addIssue({
         code: "custom",
         message: `Backup purchase is invalid: ${errors[0]}`,
-      });}
+      });
+    }
   });
 
 // Zod owns the untrusted-input boundary and preserves the precise parsed return contract.
@@ -235,24 +224,29 @@ const zipMetadata = z.object({
 });
 
 export async function importBackup(file: File): Promise<Purchase[]> {
-  if (file.size > 60 * 1024 * 1024)
-    {throw new Error("Backup is larger than 60 MB.");}
+  if (file.size > 60 * 1024 * 1024) {
+    throw new Error("Backup is larger than 60 MB.");
+  }
 
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
   const manifest = zip.file("holdfast.json");
 
-  if (!manifest) {throw new Error("This is not a Holdfast backup ZIP.");}
+  if (!manifest) {
+    throw new Error("This is not a Holdfast backup ZIP.");
+  }
 
   const manifestSize = zipMetadata.parse(manifest)._data.uncompressedSize;
 
-  if (manifestSize > 5 * 1024 * 1024)
-    {throw new Error("Backup manifest is too large.");}
+  if (manifestSize > 5 * 1024 * 1024) {
+    throw new Error("Backup manifest is too large.");
+  }
 
   const data = backupManifest.parse(JSON.parse(await manifest.async("string")));
   const records = data.purchases;
 
-  if (new Set(records.map((p) => p.id)).size !== records.length)
-    {throw new Error("Duplicate purchase IDs in backup.");}
+  if (new Set(records.map((p) => p.id)).size !== records.length) {
+    throw new Error("Duplicate purchase IDs in backup.");
+  }
 
   let total = 0;
   const result: Purchase[] = [];
@@ -263,18 +257,17 @@ export async function importBackup(file: File): Promise<Purchase[]> {
     for (const a of p.attachments) {
       const entry = zip.file(`evidence/${p.id}/${a.id}`);
 
-      if (!entry) {throw new Error(`Missing evidence: ${a.name}`);}
+      if (!entry) {
+        throw new Error(`Missing evidence: ${a.name}`);
+      }
 
       const size = zipMetadata.parse(entry)._data.uncompressedSize;
 
       total += size;
 
-      if (
-        size !== a.size ||
-        size > 12 * 1024 * 1024 ||
-        total > 60 * 1024 * 1024
-      )
-        {throw new Error("Backup evidence size is invalid or too large.");}
+      if (size !== a.size || size > 12 * 1024 * 1024 || total > 60 * 1024 * 1024) {
+        throw new Error("Backup evidence size is invalid or too large.");
+      }
 
       const buffer = await entry.async("arraybuffer");
       attachments.push({ ...a, blob: new Blob([buffer], { type: a.type }) });

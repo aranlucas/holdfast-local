@@ -33,12 +33,7 @@ import {
 } from "./model";
 import type { Purchase } from "./model";
 import { demoPurchases } from "./samples";
-import {
-  clearPurchases,
-  loadPurchases,
-  saveMany,
-  savePurchase,
-} from "./storage";
+import { clearPurchases, loadPurchases, saveMany, savePurchase } from "./storage";
 import { readReceiptFile } from "./extraction";
 import { ReceiptPicker } from "./ReceiptPicker";
 import { receiptItems } from "./receiptItems";
@@ -111,25 +106,25 @@ function CheckStamp() {
 
 export default function App() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-    const [page, setPage] = useState("shelf");
-    const [importing, setImporting] = useState(false);
-    const [draft, setDraft] = useState<Purchase | null>(null);
-    const [receipt, setReceipt] = useState<Purchase | null>(null);
-    const [queue, setQueue] = useState<Purchase[]>([]);
-    const [queueTotal, setQueueTotal] = useState(0);
-    const [selected, setSelected] = useState<string | null>(null);
-    const [busy, setBusy] = useState(false);
-    const [loaded, setLoaded] = useState(false);
-    const [error, setError] = useState("");
-    const [toast, setToast] = useState("");
-    const [filter, setFilter] = useState("all");
-    const [search, setSearch] = useState("");
-    const [online, setOnline] = useState(navigator.onLine);
-    const [offlineReady, setOfflineReady] = useState(false);
-    const [drag, setDrag] = useState(false);
+  const [page, setPage] = useState("shelf");
+  const [importing, setImporting] = useState(false);
+  const [draft, setDraft] = useState<Purchase | null>(null);
+  const [receipt, setReceipt] = useState<Purchase | null>(null);
+  const [queue, setQueue] = useState<Purchase[]>([]);
+  const [queueTotal, setQueueTotal] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [online, setOnline] = useState(navigator.onLine);
+  const [offlineReady, setOfflineReady] = useState(false);
+  const [drag, setDrag] = useState(false);
 
   const busyRef = useRef(false);
-    const importSequence = useRef(0);
+  const importSequence = useRef(0);
 
   const [today, setToday] = useState(todayInZone);
   useEffect(() => {
@@ -179,7 +174,9 @@ export default function App() {
     }
   }, []);
   useEffect(() => {
-    if (!toast) {return;}
+    if (!toast) {
+      return;
+    }
 
     const timer = setTimeout(() => setToast(""), 5000);
 
@@ -187,8 +184,9 @@ export default function App() {
   }, [toast]);
 
   async function save(p: Purchase) {
-    if (busyRef.current)
-      {throw new Error("A save is still in progress. Try again in a moment.");}
+    if (busyRef.current) {
+      throw new Error("A save is still in progress. Try again in a moment.");
+    }
 
     busyRef.current = true;
     const previous = purchases;
@@ -220,7 +218,9 @@ export default function App() {
         : "Three facts confirmed. Your purchase is saved.",
     );
 
-    if (!queue.length) {setQueueTotal(0);}
+    if (!queue.length) {
+      setQueueTotal(0);
+    }
   }
 
   function startDrafts(items: Purchase[]) {
@@ -234,21 +234,25 @@ export default function App() {
   function receiveReceipt(p: Purchase) {
     setImporting(false);
 
-    if (receiptItems(p.receiptText).length > 1) {setReceipt(p);}
-    else {startDrafts([p]);}
+    if (receiptItems(p.receiptText).length > 1) {
+      setReceipt(p);
+    } else {
+      startDrafts([p]);
+    }
   }
 
   function cancelDrafts() {
-    if (busyRef.current) {return;}
+    if (busyRef.current) {
+      return;
+    }
 
     setDraft(null);
     setQueue([]);
     setQueueTotal(0);
 
-    if (queueTotal)
-      {setToast(
-        "Unsaved items discarded. Already verified items stay on your shelf.",
-      );}
+    if (queueTotal) {
+      setToast("Unsaved items discarded. Already verified items stay on your shelf.");
+    }
   }
 
   async function demo() {
@@ -258,9 +262,7 @@ export default function App() {
       const p = demoPurchases();
       await saveMany(p);
       setPurchases((old) => [...p, ...old]);
-      setToast(
-        "Four fictional purchases added. Every document and policy is synthetic.",
-      );
+      setToast("Four fictional purchases added. Every document and policy is synthetic.");
     } catch {
       setError("Could not save samples. Check device storage and try again.");
     } finally {
@@ -269,7 +271,9 @@ export default function App() {
   }
 
   async function drop(file?: File) {
-    if (!file || busy) {return;}
+    if (!file || busy) {
+      return;
+    }
 
     const sequence = ++importSequence.current;
     setBusy(true);
@@ -278,13 +282,11 @@ export default function App() {
     try {
       const p = await readReceiptFile(file);
 
-      if (sequence === importSequence.current) {receiveReceipt(p);}
+      if (sequence === importSequence.current) {
+        receiveReceipt(p);
+      }
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Could not read this receipt. Try again.",
-      );
+      setError(e instanceof Error ? e.message : "Could not read this receipt. Try again.");
     } finally {
       setBusy(false);
     }
@@ -315,21 +317,19 @@ export default function App() {
 
   const soon = purchases.filter((p) => returnStatus(p, today).key === "soon");
 
-    const unknown = purchases.filter(
-      (p) => returnStatus(p, today).key === "unknown" && p.outcome === "active",
-    );
+  const unknown = purchases.filter(
+    (p) => returnStatus(p, today).key === "unknown" && p.outcome === "active",
+  );
 
   const visible = purchases
     .filter(
       (p) =>
         (filter === "all" || returnStatus(p, today).key === filter) &&
-        `${p.item} ${p.merchant} ${p.orderNumber}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
+        `${p.item} ${p.merchant} ${p.orderNumber}`.toLowerCase().includes(search.toLowerCase()),
     )
     .sort((a, b) => {
       const da = returnDeadline(a).date;
-        const db = returnDeadline(b).date;
+      const db = returnDeadline(b).date;
 
       return (da || "9999").localeCompare(db || "9999");
     });
@@ -362,6 +362,7 @@ export default function App() {
         <div className="nav-caption">LIFE AFTER CHECKOUT</div>
         <nav aria-label="Main navigation">
           <button
+            type="button"
             className={page === "shelf" ? "active" : ""}
             aria-current={page === "shelf" ? "page" : undefined}
             onClick={() => setPage("shelf")}
@@ -370,6 +371,7 @@ export default function App() {
             My shelf <span>{purchases.length}</span>
           </button>
           <button
+            type="button"
             className={page === "timeline" ? "active" : ""}
             aria-current={page === "timeline" ? "page" : undefined}
             onClick={() => setPage("timeline")}
@@ -378,6 +380,7 @@ export default function App() {
             Timeline{soon.length ? <i /> : null}
           </button>
           <button
+            type="button"
             className={page === "privacy" ? "active" : ""}
             aria-current={page === "privacy" ? "page" : undefined}
             onClick={() => setPage("privacy")}
@@ -420,14 +423,11 @@ export default function App() {
       <div className="workspace">
         <header className="topbar">
           <p>
-            {page === "shelf"
-              ? "My shelf"
-              : page === "timeline"
-                ? "Timeline"
-                : "My device"}{" "}
+            {page === "shelf" ? "My shelf" : page === "timeline" ? "Timeline" : "My device"}{" "}
             <span>/</span> {formatDate(today)}
           </p>
           <button
+            type="button"
             className="button primary"
             onClick={() => setImporting(true)}
             disabled={!loaded || busy}
@@ -441,14 +441,11 @@ export default function App() {
             <div className="app-error">
               <Notice kind="error">{error}</Notice>
               {!loaded ? (
-                <button
-                  className="button secondary"
-                  onClick={() => void load()}
-                >
+                <button type="button" className="button secondary" onClick={() => void load()}>
                   Retry device storage
                 </button>
               ) : (
-                <button className="text-button" onClick={() => setError("")}>
+                <button type="button" className="text-button" onClick={() => setError("")}>
                   Dismiss
                 </button>
               )}
@@ -475,6 +472,7 @@ export default function App() {
                   </p>
                   <div className="hero-actions">
                     <button
+                      type="button"
                       className="button primary"
                       onClick={() => setImporting(true)}
                       disabled={busy}
@@ -484,6 +482,7 @@ export default function App() {
                     </button>
                     {!purchases.length ? (
                       <button
+                        type="button"
                         className="text-button"
                         disabled={busy}
                         onClick={() => void demo()}
@@ -498,6 +497,7 @@ export default function App() {
               </section>
               {spotlight ? (
                 <button
+                  type="button"
                   className="spotlight"
                   onClick={() => setSelected(spotlight.id)}
                 >
@@ -520,6 +520,7 @@ export default function App() {
                 </button>
               ) : purchases.length && unknown.length ? (
                 <button
+                  type="button"
                   className="spotlight question"
                   onClick={() => setFilter("unknown")}
                 >
@@ -527,8 +528,7 @@ export default function App() {
                   <span>
                     <strong>One small question to clear up.</strong>
                     <span>
-                      {unknown.length}{" "}
-                      {unknown.length === 1 ? "item needs" : "items need"} an
+                      {unknown.length} {unknown.length === 1 ? "item needs" : "items need"} an
                       item-specific return rule. No dates guessed.
                     </span>
                   </span>
@@ -541,9 +541,7 @@ export default function App() {
                     Your shelf <span>{purchases.length}</span>
                   </h2>
                   {purchases.some((p) => p.synthetic) ? (
-                    <span className="sample-label">
-                      Contains fictional samples
-                    </span>
+                    <span className="sample-label">Contains fictional samples</span>
                   ) : (
                     <span className="quiet footnote">Proof, kept close.</span>
                   )}
@@ -558,6 +556,7 @@ export default function App() {
                       ["closed", "Closed"],
                     ].map(([v, l]) => (
                       <button
+                        type="button"
                         key={v}
                         aria-pressed={filter === v}
                         className={filter === v ? "selected" : ""}
@@ -589,11 +588,12 @@ export default function App() {
                     <div className="purchase-list">
                       {visible.map((p) => {
                         const status = returnStatus(p, today);
-                          const ret = returnDeadline(p);
-                          const war = warrantyDeadline(p);
+                        const ret = returnDeadline(p);
+                        const war = warrantyDeadline(p);
 
                         return (
                           <button
+                            type="button"
                             className="purchase-row"
                             key={p.id}
                             onClick={() => setSelected(p.id)}
@@ -616,13 +616,9 @@ export default function App() {
                               <small>{formatDate(p.purchaseDate)}</small>
                             </span>
                             <span className="return-cell">
-                              <span className={`status ${status.tone}`}>
-                                {status.label}
-                              </span>
+                              <span className={`status ${status.tone}`}>{status.label}</span>
                               <small>
-                                {ret.date
-                                  ? formatDate(ret.date)
-                                  : "Rule not confirmed"}
+                                {ret.date ? formatDate(ret.date) : "Rule not confirmed"}
                               </small>
                             </span>
                             <span className="warranty-cell">
@@ -645,6 +641,7 @@ export default function App() {
                           <h3>Nothing in this view.</h3>
                           <p>Try another filter or search.</p>
                           <button
+                            type="button"
                             className="text-button"
                             onClick={() => {
                               setFilter("all");
@@ -681,6 +678,7 @@ export default function App() {
                       We’ll help you verify the purchase, date, and policy.
                     </p>
                     <button
+                      type="button"
                       className="button secondary"
                       disabled={busy}
                       onClick={() => setImporting(true)}
@@ -697,9 +695,7 @@ export default function App() {
                   <LockKeyhole size={13} />
                   Local by design. Yours by default.
                 </span>
-                <span>
-                  Recorded dates are planning aids. Check the merchant’s terms.
-                </span>
+                <span>Recorded dates are planning aids. Check the merchant’s terms.</span>
               </footer>
             </>
           ) : null}
@@ -707,27 +703,13 @@ export default function App() {
             <Timeline purchases={purchases} onSelect={setSelected} />
           ) : null}
           {page === "privacy" && loaded ? (
-            <Privacy
-              purchases={purchases}
-              onRestore={restore}
-              onClear={clear}
-              busy={busy}
-            />
+            <Privacy purchases={purchases} onRestore={restore} onClear={clear} busy={busy} />
           ) : null}
         </main>
       </div>
-      {importing ? (
-        <Importer
-          onClose={() => setImporting(false)}
-          onReady={receiveReceipt}
-        />
-      ) : null}
+      {importing ? <Importer onClose={() => setImporting(false)} onReady={receiveReceipt} /> : null}
       {receipt ? (
-        <ReceiptPicker
-          receipt={receipt}
-          onClose={() => setReceipt(null)}
-          onReady={startDrafts}
-        />
+        <ReceiptPicker receipt={receipt} onClose={() => setReceipt(null)} onReady={startDrafts} />
       ) : null}
       {draft ? (
         <Verifier
@@ -737,9 +719,7 @@ export default function App() {
           onSave={saveDraft}
           busy={busy}
           queueProgress={
-            queueTotal
-              ? { current: queueTotal - queue.length, total: queueTotal }
-              : undefined
+            queueTotal ? { current: queueTotal - queue.length, total: queueTotal } : undefined
           }
         />
       ) : null}
@@ -765,19 +745,9 @@ export default function App() {
 
 function FileLines() {
   return (
-    <svg
-      width="26"
-      height="34"
-      viewBox="0 0 26 34"
-      fill="none"
-      aria-hidden="true"
-    >
+    <svg width="26" height="34" viewBox="0 0 26 34" fill="none" aria-hidden="true">
       <path d="M4 2h18v29l-4-2-5 2-5-2-4 2V2Z" stroke="currentColor" />
-      <path
-        d="M8 9h10M8 14h10M8 19h6"
-        stroke="currentColor"
-        strokeLinecap="round"
-      />
+      <path d="M8 9h10M8 14h10M8 19h6" stroke="currentColor" strokeLinecap="round" />
     </svg>
   );
 }

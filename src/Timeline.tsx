@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { ArrowRight, CalendarDays, ShieldCheck } from "lucide-react";
 import type { Purchase } from "./model";
-import {
-  daysLeft,
-  formatDate,
-  returnDeadline,
-  todayInZone,
-  warrantyDeadline,
-} from "./model";
+import { daysLeft, formatDate, returnDeadline, todayInZone, warrantyDeadline } from "./model";
 import { calendarBlob, calendarEvents } from "./calendar";
 import { downloadBlob } from "./exports";
 
@@ -33,8 +27,7 @@ export function Timeline({
   const unknown = purchases.filter(
     (p) =>
       p.outcome === "active" &&
-      (returnDeadline(p).state === "unknown" ||
-        warrantyDeadline(p).state === "unknown"),
+      (returnDeadline(p).state === "unknown" || warrantyDeadline(p).state === "unknown"),
   );
 
   return (
@@ -55,6 +48,7 @@ export function Timeline({
             ["warranty", "Warranties"],
           ].map(([v, l]) => (
             <button
+              type="button"
               key={v}
               className={kind === v ? "selected" : ""}
               aria-pressed={kind === v}
@@ -67,21 +61,17 @@ export function Timeline({
       </div>
       <div className="calendar-export">
         <button
+          type="button"
           className="button secondary"
           disabled={!calendarEvents(active, kind).length}
-          onClick={() =>
-            downloadBlob(
-              calendarBlob(active, kind),
-              "Holdfast-recorded-dates.ics",
-            )
-          }
+          onClick={() => downloadBlob(calendarBlob(active, kind), "Holdfast-recorded-dates.ics")}
         >
           <CalendarDays size={17} /> Export visible dates (.ics)
         </button>
         <p className="quiet footnote">
-          A one-time calendar file with item, merchant and policy source. No
-          receipt details. All-day dates stay fixed across time zones. Imports
-          do not update automatically; calendar settings may add alerts.
+          A one-time calendar file with item, merchant and policy source. No receipt details.
+          All-day dates stay fixed across time zones. Imports do not update automatically; calendar
+          settings may add alerts.
         </p>
       </div>
       <div className="event-list">
@@ -90,6 +80,7 @@ export function Timeline({
 
           return (
             <button
+              type="button"
               key={`${e.p.id}-${e.kind}`}
               className={`event ${left < 0 ? "past" : ""}`}
               onClick={() => onSelect(e.p.id)}
@@ -101,25 +92,15 @@ export function Timeline({
               <span className="event-dot" />
               <div className="event-body">
                 <small>
-                  {e.kind === "return"
-                    ? "Recorded return end"
-                    : "Recorded warranty end"}
+                  {e.kind === "return" ? "Recorded return end" : "Recorded warranty end"}
                 </small>
                 <strong>{e.p.item}</strong>
                 <span>
                   {e.p.merchant} ·{" "}
-                  {left < 0
-                    ? "Recorded date passed"
-                    : left === 0
-                      ? "Today"
-                      : `${left} days away`}
+                  {left < 0 ? "Recorded date passed" : left === 0 ? "Today" : `${left} days away`}
                 </span>
               </div>
-              {e.kind === "return" ? (
-                <CalendarDays size={20} />
-              ) : (
-                <ShieldCheck size={20} />
-              )}
+              {e.kind === "return" ? <CalendarDays size={20} /> : <ShieldCheck size={20} />}
               <ArrowRight size={17} />
             </button>
           );
@@ -128,22 +109,16 @@ export function Timeline({
           <div className="empty-results">
             <CalendarDays size={32} />
             <h3>No recorded dates here yet.</h3>
-            <p>
-              Add a receipt and confirm the policy to place a date on the
-              timeline.
-            </p>
+            <p>Add a receipt and confirm the policy to place a date on the timeline.</p>
           </div>
         ) : null}
       </div>
       {unknown.length ? (
         <section className="unknown-list">
           <h2>Still a question mark.</h2>
-          <p>
-            These items need a return or warranty rule. We have not guessed a
-            date.
-          </p>
+          <p>These items need a return or warranty rule. We have not guessed a date.</p>
           {unknown.map((p) => (
-            <button key={p.id} onClick={() => onSelect(p.id)}>
+            <button type="button" key={p.id} onClick={() => onSelect(p.id)}>
               <span>
                 <strong>{p.item}</strong>
                 <small>{p.merchant}</small>
@@ -155,8 +130,8 @@ export function Timeline({
         </section>
       ) : null}
       <p className="timeline-disclaimer">
-        Calendar planning dates from your inputs. Confirm item eligibility,
-        final-day cutoffs, and terms with the merchant.
+        Calendar planning dates from your inputs. Confirm item eligibility, final-day cutoffs, and
+        terms with the merchant.
       </p>
     </>
   );

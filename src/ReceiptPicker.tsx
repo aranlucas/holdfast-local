@@ -17,25 +17,19 @@ export function ReceiptPicker({
   const matches = receiptItems(receipt.receiptText);
   const candidates = matches.slice(0, 100);
 
-  const [selected, setSelected] = useState<number[]>(
-    candidates.slice(0, 20).map((_, i) => i),
-  );
+  const [selected, setSelected] = useState<number[]>(candidates.slice(0, 20).map((_, i) => i));
 
   return (
     <Modal title="One receipt. Separate plans." onClose={onClose}>
       <p className="modal-intro">
-        Choose the products to track. Then verify three facts for each—every
-        item gets its own rule.
+        Choose the products to track. Then verify three facts for each—every item gets its own rule.
       </p>
       <Notice>
-        These are suggestions from receipt lines. Line amounts exclude any
-        shared taxes, shipping or discounts. The receipt total is never repeated
-        across products.
+        These are suggestions from receipt lines. Line amounts exclude any shared taxes, shipping or
+        discounts. The receipt total is never repeated across products.
       </Notice>
       {matches.length > candidates.length ? (
-        <Notice>
-          Showing the first 100 suggested lines. Enter other products manually.
-        </Notice>
+        <Notice>Showing the first 100 suggested lines. Enter other products manually.</Notice>
       ) : null}
       <div className="receipt-picks">
         {candidates.map((c, i) => (
@@ -45,9 +39,7 @@ export function ReceiptPicker({
               checked={selected.includes(i)}
               disabled={selected.length >= 20 && !selected.includes(i)}
               onChange={(e) =>
-                setSelected((old) =>
-                  e.target.checked ? [...old, i] : old.filter((v) => v !== i),
-                )
+                setSelected((old) => (e.target.checked ? [...old, i] : old.filter((v) => v !== i)))
               }
             />
             <span>
@@ -69,22 +61,20 @@ export function ReceiptPicker({
         ))}
       </div>
       <p className="quiet footnote">
-        <FileText size={15} /> The complete receipt and original document stay
-        with each record. Track up to 20 items at a time; nothing is saved until
-        you verify it.
+        <FileText size={15} /> The complete receipt and original document stay with each record.
+        Track up to 20 items at a time; nothing is saved until you verify it.
       </p>
       <div className="wizard-actions">
-        <button className="text-button" onClick={() => onReady([receipt])}>
+        <button type="button" className="text-button" onClick={() => onReady([receipt])}>
           Track one item manually
         </button>
         <button
+          type="button"
           className="button primary"
           disabled={!selected.length}
           onClick={() =>
             onReady(
-              candidates
-                .filter((_, i) => selected.includes(i))
-                .map((c) => itemDraft(receipt, c)),
+              candidates.filter((_, i) => selected.includes(i)).map((c) => itemDraft(receipt, c)),
             )
           }
         >

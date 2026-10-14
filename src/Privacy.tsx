@@ -1,11 +1,5 @@
 import { useRef, useState } from "react";
-import {
-  ArrowDownToLine,
-  FolderLock,
-  RotateCcw,
-  ShieldCheck,
-  Upload,
-} from "lucide-react";
+import { ArrowDownToLine, FolderLock, RotateCcw, ShieldCheck, Upload } from "lucide-react";
 import type { Purchase } from "./model";
 import { downloadBlob, exportBackup, importBackup } from "./exports";
 import { Notice } from "./ui";
@@ -22,9 +16,9 @@ export function Privacy({
   busy: boolean;
 }) {
   const [error, setError] = useState("");
-    const [working, setWorking] = useState(false);
-    const [clear, setClear] = useState(false);
-    const [success, setSuccess] = useState("");
+  const [working, setWorking] = useState(false);
+  const [clear, setClear] = useState(false);
+  const [success, setSuccess] = useState("");
 
   const file = useRef<HTMLInputElement>(null);
 
@@ -38,16 +32,16 @@ export function Privacy({
         "Backup downloaded. Keep it somewhere you trust; it contains your receipt data and documents.",
       );
     } catch {
-      setError(
-        "Could not create the backup. Your device data is unchanged. Try again.",
-      );
+      setError("Could not create the backup. Your device data is unchanged. Try again.");
     } finally {
       setWorking(false);
     }
   }
 
   async function restore(f?: File) {
-    if (!f) {return;}
+    if (!f) {
+      return;
+    }
 
     setWorking(true);
     setError("");
@@ -68,7 +62,9 @@ export function Privacy({
     } finally {
       setWorking(false);
 
-      if (file.current) {file.current.value = "";}
+      if (file.current) {
+        file.current.value = "";
+      }
     }
   }
 
@@ -92,20 +88,18 @@ export function Privacy({
           <ShieldCheck size={28} />
           <h2>A small, private filing cabinet.</h2>
           <p>
-            Purchases and original documents are stored in this browser’s
-            IndexedDB, on this device. Reading a receipt, calculating dates, and
-            building a packet happen locally. The app has no analytics or
-            external AI calls.
+            Purchases and original documents are stored in this browser’s IndexedDB, on this device.
+            Reading a receipt, calculating dates, and building a packet happen locally. The app has
+            no analytics or external AI calls.
           </p>
           <p>
-            This is local storage, not an encrypted vault. Anyone using this
-            browser profile can open it. A different browser, device, address,
-            or port has a separate cabinet. Browser clearing or storage eviction
-            can remove your data.
+            This is local storage, not an encrypted vault. Anyone using this browser profile can
+            open it. A different browser, device, address, or port has a separate cabinet. Browser
+            clearing or storage eviction can remove your data.
           </p>
           <p>
-            Keep a backup before clearing browser data. Your exported packet or
-            backup contains the evidence you put in; share it intentionally.
+            Keep a backup before clearing browser data. Your exported packet or backup contains the
+            evidence you put in; share it intentionally.
           </p>
           <div className="device-facts">
             <span>Current cabinet</span>
@@ -119,10 +113,11 @@ export function Privacy({
         <section className="backup-panel">
           <h2>Take the cabinet with you.</h2>
           <p>
-            Back up every purchase and original document. Restore your exported
-            ZIP on another device or browser.
+            Back up every purchase and original document. Restore your exported ZIP on another
+            device or browser.
           </p>
           <button
+            type="button"
             className="button primary"
             disabled={busy || working}
             onClick={() => void backup()}
@@ -131,6 +126,7 @@ export function Privacy({
             {working ? "Working…" : "Download device backup"}
           </button>
           <button
+            type="button"
             className="button secondary"
             disabled={busy || working}
             onClick={() => file.current?.click()}
@@ -147,22 +143,23 @@ export function Privacy({
             onChange={(e) => void restore(e.target.files?.[0])}
           />
           <p className="footnote">
-            Restore validates the full backup before saving. Purchases with
-            matching IDs are updated. Other purchases stay.
+            Restore validates the full backup before saving. Purchases with matching IDs are
+            updated. Other purchases stay.
           </p>
           <hr />
           <h3>Start fresh on this device.</h3>
           <p className="footnote">
-            Clear all saved purchases and original documents in this cabinet.
-            Download a backup first if you want to keep them.
+            Clear all saved purchases and original documents in this cabinet. Download a backup
+            first if you want to keep them.
           </p>
           {clear ? (
             <div className="clear-confirm">
               <p>
-                Clear all {purchases.length} purchases from this device? This
-                cannot be undone without your backup.
+                Clear all {purchases.length} purchases from this device? This cannot be undone
+                without your backup.
               </p>
               <button
+                type="button"
                 className="button danger"
                 disabled={busy || working}
                 onClick={() => {
@@ -173,22 +170,19 @@ export function Privacy({
                       setSuccess("This device cabinet is now empty.");
                     })
                     .catch((e) =>
-                      setError(
-                        e instanceof Error
-                          ? e.message
-                          : "Could not clear. Try again.",
-                      ),
+                      setError(e instanceof Error ? e.message : "Could not clear. Try again."),
                     );
                 }}
               >
                 Yes, clear this device
               </button>
-              <button className="text-button" onClick={() => setClear(false)}>
+              <button type="button" className="text-button" onClick={() => setClear(false)}>
                 Cancel
               </button>
             </div>
           ) : (
             <button
+              type="button"
               className="text-button danger-text"
               disabled={busy || working || !purchases.length}
               onClick={() => setClear(true)}
