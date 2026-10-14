@@ -3,7 +3,7 @@ import type { Purchase } from "./model";
 
 function textValue(value: string): string {
   return value
-    .replaceAll('\\', String.raw`\\`)
+    .replaceAll("\\", String.raw`\\`)
     .replaceAll(/\r\n|\r|\n/g, String.raw`\n`)
     .replaceAll(/[,;]/g, String.raw`\$&`)
     .replaceAll(/[\u0000-\u0008\x0B-\u001F\x7F]/g, "");
@@ -13,8 +13,8 @@ function fold(line: string): string {
   const encoder = new TextEncoder();
 
   let part = "";
-    let length = 0;
-    let result = "";
+  let length = 0;
+  let result = "";
 
   for (const char of line) {
     const size = encoder.encode(char).length;
@@ -41,17 +41,11 @@ export function calendarEvents(purchases: Purchase[], kind = "all") {
     ])
     .filter(
       (e) =>
-        e.deadline.state === "known" &&
-        !!e.deadline.date &&
-        (kind === "all" || e.kind === kind),
+        e.deadline.state === "known" && !!e.deadline.date && (kind === "all" || e.kind === kind),
     );
 }
 
-export function calendarText(
-  purchases: Purchase[],
-  kind = "all",
-  now = new Date(),
-): string {
+export function calendarText(purchases: Purchase[], kind = "all", now = new Date()): string {
   const stamp = now
     .toISOString()
     .replaceAll(/[-:]/g, "")
@@ -68,9 +62,7 @@ export function calendarText(
     const date = e.deadline.date!;
 
     // DATE values are calendar days. DTEND is exclusive, including at 2199-12-31.
-    const end = new Date(Date.parse(`${date}T00:00:00Z`) + 86400000)
-      .toISOString()
-      .slice(0, 10);
+    const end = new Date(Date.parse(`${date}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
 
     const uid = Array.from(new TextEncoder().encode(e.p.id))
       .map((b) => b.toString(16).padStart(2, "0"))
@@ -80,8 +72,8 @@ export function calendarText(
       "BEGIN:VEVENT",
       `UID:${uid}-${e.kind}@holdfast.local`,
       `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${date.replaceAll('-', "")}`,
-      `DTEND;VALUE=DATE:${end.replaceAll('-', "")}`,
+      `DTSTART;VALUE=DATE:${date.replaceAll("-", "")}`,
+      `DTEND;VALUE=DATE:${end.replaceAll("-", "")}`,
       `SUMMARY:${textValue(`Recorded ${e.kind} end · ${e.p.item}`)}`,
       `DESCRIPTION:${textValue(`${e.p.merchant}\nPolicy source: ${e.p.policy.sourceLabel || "User-recorded source"}\n${e.deadline.explanation}\nPlanning aid. Verify item eligibility, terms and final-day cutoff with the merchant. Exported dates do not update automatically.`)}`,
       "CLASS:PRIVATE",

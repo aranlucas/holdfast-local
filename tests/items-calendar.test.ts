@@ -88,9 +88,7 @@ function parse(text: string) {
 
 describe("RFC 5545 date-only calendar export", () => {
   it("parses all-day leap/month-end events with an exclusive next-day end", () => {
-    const events = parse(
-      calendarText([known()], "all", new Date("2026-10-02T12:34:56Z")),
-    );
+    const events = parse(calendarText([known()], "all", new Date("2026-10-02T12:34:56Z")));
 
     expect(events).toHaveLength(2);
     const [a, b] = events.map((e) => new ICAL.Event(e));
@@ -99,9 +97,7 @@ describe("RFC 5545 date-only calendar export", () => {
     expect(a.endDate.toString()).toBe("2024-03-01");
     expect(b.startDate.toString()).toBe("2025-02-28");
     expect(b.endDate.toString()).toBe("2025-03-01");
-    expect(events[0].getFirstPropertyValue("dtstamp")?.toString()).toBe(
-      "2026-10-02T12:34:56Z",
-    );
+    expect(events[0].getFirstPropertyValue("dtstamp")?.toString()).toBe("2026-10-02T12:34:56Z");
   });
   it("omits unknown, none and unverified policies", () => {
     const p = known();
@@ -117,9 +113,7 @@ describe("RFC 5545 date-only calendar export", () => {
     const first = parse(calendarText([p], "return"));
     const repeat = parse(calendarText([p], "return"));
     expect(first).toHaveLength(1);
-    expect(first[0].getFirstPropertyValue("uid")).toBe(
-      repeat[0].getFirstPropertyValue("uid"),
-    );
+    expect(first[0].getFirstPropertyValue("uid")).toBe(repeat[0].getFirstPropertyValue("uid"));
     expect(parse(calendarText([p], "warranty"))).toHaveLength(1);
   });
   it("escapes injection, special characters and UTF-8 without splitting code points", () => {
@@ -130,12 +124,13 @@ describe("RFC 5545 date-only calendar export", () => {
     const text = calendarText([p]);
     const events = parse(text);
     expect(new ICAL.Event(events[0]).summary).toBe(
-      `Recorded return end · ${p.item.replaceAll('\r\n', "\n")}`,
+      `Recorded return end · ${p.item.replaceAll("\r\n", "\n")}`,
     );
     expect(events[0].getAllSubcomponents("valarm")).toHaveLength(0);
 
-    for (const line of text.split("\r\n"))
-      {expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);}
+    for (const line of text.split("\r\n")) {
+      expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+    }
 
     expect(text).not.toContain("�");
   });
@@ -150,9 +145,7 @@ describe("RFC 5545 date-only calendar export", () => {
     expect(text).not.toContain("PRIVATE NOTES");
     expect(text).not.toContain("PRIVATE SERIAL");
     expect(text).not.toContain("PRIVATE ORDER");
-    expect(text).not.toMatch(
-      /^(?:BEGIN:VALARM|ATTENDEE|ORGANIZER|METHOD|URL):?/m,
-    );
+    expect(text).not.toMatch(/^(?:BEGIN:VALARM|ATTENDEE|ORGANIZER|METHOD|URL):?/m);
   });
   it("represents the upper supported date without range overflow", () => {
     const p = known();

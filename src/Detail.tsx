@@ -39,17 +39,17 @@ export function Detail({
   busy: boolean;
 }) {
   const [notes, setNotes] = useState(p.notes);
-    const [serial, setSerial] = useState(p.serialNumber);
-    const [error, setError] = useState("");
-    const [exporting, setExporting] = useState(false);
-    const [saved, setSaved] = useState(false);
+  const [serial, setSerial] = useState(p.serialNumber);
+  const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const fileInput = useRef<HTMLInputElement>(null);
 
   const ret = returnDeadline(p);
-    const war = warrantyDeadline(p);
-    const status = returnStatus(p);
-    const done = CHECKLIST.filter((c) => p.checklist[c.id]).length;
+  const war = warrantyDeadline(p);
+  const status = returnStatus(p);
+  const done = CHECKLIST.filter((c) => p.checklist[c.id]).length;
 
   async function save(next: Purchase) {
     setError("");
@@ -70,31 +70,31 @@ export function Detail({
     setError("");
 
     try {
-      downloadBlob(
-        await exportPacket(p),
-        `Holdfast-${safeName(p.item)}-proof.zip`,
-      );
+      downloadBlob(await exportPacket(p), `Holdfast-${safeName(p.item)}-proof.zip`);
     } catch {
-      setError(
-        "Could not create this packet. Your saved purchase is unchanged; try again.",
-      );
+      setError("Could not create this packet. Your saved purchase is unchanged; try again.");
     } finally {
       setExporting(false);
     }
   }
 
   async function attach(file?: File) {
-    if (!file) {return;}
+    if (!file) {
+      return;
+    }
 
     try {
-      if (file.size > MAX_FILE_BYTES)
-        {throw new Error("Evidence must be 12 MB or smaller.");}
+      if (file.size > MAX_FILE_BYTES) {
+        throw new Error("Evidence must be 12 MB or smaller.");
+      }
 
-      if (p.attachments.length >= 10)
-        {throw new Error("Each purchase can hold up to 10 documents.");}
+      if (p.attachments.length >= 10) {
+        throw new Error("Each purchase can hold up to 10 documents.");
+      }
 
-      if (!/\.(pdf|txt|md|png|jpe?g|webp)$/i.test(file.name))
-        {throw new Error("Use a PDF, text, PNG, JPEG, or WebP document.");}
+      if (!/\.(pdf|txt|md|png|jpe?g|webp)$/i.test(file.name)) {
+        throw new Error("Use a PDF, text, PNG, JPEG, or WebP document.");
+      }
 
       await save({
         ...p,
@@ -112,7 +112,9 @@ export function Detail({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not attach the file.");
     } finally {
-      if (fileInput.current) {fileInput.current.value = "";}
+      if (fileInput.current) {
+        fileInput.current.value = "";
+      }
     }
   }
 
@@ -122,9 +124,7 @@ export function Detail({
         <div>
           <p className="merchant-label">
             {p.merchant}
-            {p.synthetic ? (
-              <span className="sample-label">Synthetic sample</span>
-            ) : null}
+            {p.synthetic ? <span className="sample-label">Synthetic sample</span> : null}
           </p>
           <h3>{p.item}</h3>
           <p className="quiet">
@@ -132,7 +132,7 @@ export function Detail({
             {formatDate(p.purchaseDate)}
           </p>
         </div>
-        <button className="button secondary" onClick={onEdit} disabled={busy}>
+        <button type="button" className="button secondary" onClick={onEdit} disabled={busy}>
           <Pencil size={15} />
           Review facts
         </button>
@@ -168,13 +168,9 @@ export function Detail({
                 <div>
                   <small>Recorded return end</small>
                   <strong>
-                    {ret.state === "none"
-                      ? "No stated window"
-                      : formatDate(ret.date, true)}
+                    {ret.state === "none" ? "No stated window" : formatDate(ret.date, true)}
                   </strong>
-                  <span className={`status ${status.tone}`}>
-                    {status.label}
-                  </span>
+                  <span className={`status ${status.tone}`}>{status.label}</span>
                   <p>{ret.explanation}</p>
                 </div>
               </div>
@@ -183,30 +179,26 @@ export function Detail({
                 <div>
                   <small>Recorded warranty end</small>
                   <strong>
-                    {war.state === "none"
-                      ? "No stated warranty"
-                      : formatDate(war.date, true)}
+                    {war.state === "none" ? "No stated warranty" : formatDate(war.date, true)}
                   </strong>
                   <p>{war.explanation}</p>
                 </div>
               </div>
             </div>
             <button
+              type="button"
               className="text-button"
               disabled={!calendarEvents([p]).length}
               onClick={() =>
-                downloadBlob(
-                  calendarBlob([p]),
-                  `Holdfast-${safeName(p.item)}-dates.ics`,
-                )
+                downloadBlob(calendarBlob([p]), `Holdfast-${safeName(p.item)}-dates.ics`)
               }
             >
               <CalendarDays size={16} /> Export this item’s dates (.ics)
             </button>
             <p className="quiet footnote">
-              All-day recorded dates only. Includes item, merchant and policy
-              source. No receipt, notes or serial number. Calendar imports do
-              not update automatically; calendar settings may add alerts.
+              All-day recorded dates only. Includes item, merchant and policy source. No receipt,
+              notes or serial number. Calendar imports do not update automatically; calendar
+              settings may add alerts.
             </p>
           </section>
           <section className="source-panel">
@@ -214,21 +206,16 @@ export function Detail({
               <FileText size={19} />
               <h4>The rule behind the dates</h4>
             </div>
-            <strong>
-              {p.policy.sourceLabel || "Policy source not yet recorded"}
-            </strong>
+            <strong>{p.policy.sourceLabel || "Policy source not yet recorded"}</strong>
             <p className="quiet">Applies to: {p.policy.appliesTo || p.item}</p>
             <blockquote>
               {p.policy.text ||
                 "No policy text. Review the facts when you know which rule applies to this item."}
             </blockquote>
-            {p.policy.notes ? (
-              <p className="footnote">{p.policy.notes}</p>
-            ) : null}
+            {p.policy.notes ? <p className="footnote">{p.policy.notes}</p> : null}
             <p className="footnote">
-              Verify eligibility, conditions, fees, method, and the final-day
-              cutoff with the merchant. Recorded dates are planning aids; they
-              do not establish entitlement.
+              Verify eligibility, conditions, fees, method, and the final-day cutoff with the
+              merchant. Recorded dates are planning aids; they do not establish entitlement.
             </p>
           </section>
           <details className="receipt-source">
@@ -236,10 +223,7 @@ export function Detail({
               Original receipt text <ChevronRight size={16} />
             </summary>
             <p className="quiet">{p.sourceLabel}</p>
-            <pre>
-              {p.receiptText ||
-                "No text extracted. The original is in Documents below."}
-            </pre>
+            <pre>{p.receiptText || "No text extracted. The original is in Documents below."}</pre>
           </details>
         </div>
         <div className="proof-column">
@@ -283,6 +267,7 @@ export function Detail({
               ))}
             </div>
             <button
+              type="button"
               className="button primary full"
               onClick={() => void packet()}
               disabled={busy || exporting}
@@ -291,6 +276,7 @@ export function Detail({
               {exporting ? "Creating packet…" : "Export proof packet"}
             </button>
             <button
+              type="button"
               className="text-button full"
               onClick={() =>
                 downloadBlob(
@@ -315,6 +301,7 @@ export function Detail({
             </div>
             {p.attachments.map((a) => (
               <button
+                type="button"
                 className="document-row"
                 key={a.id}
                 onClick={() => downloadBlob(a.blob, a.name)}
@@ -322,20 +309,19 @@ export function Detail({
                 <File size={20} />
                 <span>
                   <strong>{a.name}</strong>
-                  <small>
-                    {Math.max(1, Math.round(a.size / 1024))} KB · original file
-                  </small>
+                  <small>{Math.max(1, Math.round(a.size / 1024))} KB · original file</small>
                 </span>
                 <ArrowDownToLine size={15} />
               </button>
             ))}
             {!p.attachments.length ? (
               <p className="quiet footnote">
-                Pasted receipt text is included in your packet. Add photos or a
-                saved policy if useful.
+                Pasted receipt text is included in your packet. Add photos or a saved policy if
+                useful.
               </p>
             ) : null}
             <button
+              type="button"
               className="text-button"
               disabled={busy}
               onClick={() => fileInput.current?.click()}
@@ -380,11 +366,14 @@ export function Detail({
               />
             </Field>
             <button
+              type="button"
               className="button secondary"
               disabled={busy}
               onClick={() =>
                 void save({ ...p, notes, serialNumber: serial }).then((ok) => {
-                  if (ok) {setSaved(true);}
+                  if (ok) {
+                    setSaved(true);
+                  }
                 })
               }
             >
@@ -400,9 +389,7 @@ export function Detail({
             onChange={(e) =>
               void save({
                 ...p,
-                outcome: z
-                  .enum(["active", "returned", "kept"])
-                  .parse(e.target.value),
+                outcome: z.enum(["active", "returned", "kept"]).parse(e.target.value),
               })
             }
           >

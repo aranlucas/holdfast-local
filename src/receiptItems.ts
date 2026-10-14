@@ -22,25 +22,26 @@ export function receiptItems(text: string): ReceiptItem[] {
       /^(merchant|store|date|purchase|order|receipt|total|subtotal|tax|shipping|discount|paid|amount|return|warranty|quantity|change|balance|payment)\b/i.test(
         body,
       )
-    )
-      {return [];}
+    ) {
+      return [];
+    }
 
-    const price = body.match(
-      /\s+(?:(USD|EUR|GBP|CAD|AUD)\s*|([$€£])\s*)?(\d[\d,]*\.\d{2})$/i,
-    );
+    const price = body.match(/\s+(?:(USD|EUR|GBP|CAD|AUD)\s*|([$€£])\s*)?(\d[\d,]*\.\d{2})$/i);
 
-    if (!labeled && !price) {return [];}
+    if (!labeled && !price) {
+      return [];
+    }
 
-    const item = (price ? body.slice(0, price.index) : body)
-      .replace(/\s*[—–|]\s*$/, "")
-      .trim();
+    const item = (price ? body.slice(0, price.index) : body).replace(/\s*[—–|]\s*$/, "").trim();
 
-    if (!item || !/[\p{L}]/u.test(item)) {return [];}
+    if (!item || !/[\p{L}]/u.test(item)) {
+      return [];
+    }
 
     return [
       {
         item,
-        amount: price?.[3].replaceAll(',', "") || "",
+        amount: price?.[3].replaceAll(",", "") || "",
         currency:
           price?.[1]?.toUpperCase() ||
           (price?.[2] === "€" ? "EUR" : price?.[2] === "£" ? "GBP" : ""),

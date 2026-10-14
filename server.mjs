@@ -4,30 +4,31 @@ import { resolve, extname } from "node:path";
 
 const root = resolve("dist");
 
-  const port = Number(process.env.PORT || 4319);
+const port = Number(process.env.PORT || 4319);
 
-  const host = process.env.HOST || "127.0.0.1";
+const host = process.env.HOST || "127.0.0.1";
 
-const mime = {
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".mjs": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".webmanifest": "application/manifest+json",
-  ".wasm": "application/wasm",
-  ".json": "application/json",
-};
+const mime = new Map([
+  [".html", "text/html; charset=utf-8"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".mjs", "text/javascript; charset=utf-8"],
+  [".css", "text/css; charset=utf-8"],
+  [".svg", "image/svg+xml"],
+  [".png", "image/png"],
+  [".webmanifest", "application/manifest+json"],
+  [".wasm", "application/wasm"],
+  [".json", "application/json"],
+]);
 
-createServer(async (req, res) => {
+/**
+ * @param {import("node:http").IncomingMessage} req
+ * @param {import("node:http").ServerResponse} res
+ */
+async function serveRequest(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()",
-  );
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   res.setHeader(
     "Content-Security-Policy",
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
@@ -41,9 +42,7 @@ createServer(async (req, res) => {
   }
 
   try {
-    const pathname = decodeURIComponent(
-      new URL(req.url, "http://local").pathname,
-    );
+    const pathname = decodeURIComponent(new URL(req.url ?? "/", "http://local").pathname);
 
     let file = resolve(root, "." + pathname);
 
@@ -61,13 +60,18 @@ createServer(async (req, res) => {
       return;
     }
 
-    if (pathname === "/") {file = resolve(root, "index.html");}
+    if (pathname === "/") {
+      file = resolve(root, "index.html");
+    }
 
     try {
-      if (!(await stat(file)).isFile()) {throw new Error("Missing");}
+      if (!(await stat(file)).isFile()) {
+        throw new Error("Missing");
+      }
     } catch {
-      if (!extname(pathname)) {file = resolve(root, "index.html");}
-      else {
+      if (!extname(pathname)) {
+        file = resolve(root, "index.html");
+      } else {
         res.writeHead(404);
         res.end("Not found");
 
@@ -76,15 +80,10 @@ createServer(async (req, res) => {
     }
 
     const bytes = await readFile(file);
-    res.setHeader(
-      "Content-Type",
-      mime[extname(file)] || "application/octet-stream",
-    );
+    res.setHeader("Content-Type", mime.get(extname(file)) ?? "application/octet-stream");
     res.setHeader(
       "Cache-Control",
-      file.includes("/assets/")
-        ? "public, max-age=31536000, immutable"
-        : "no-cache",
+      file.includes("/assets/") ? "public, max-age=31536000, immutable" : "no-cache",
     );
     res.writeHead(200);
     res.end(req.method === "HEAD" ? undefined : bytes);
@@ -92,4 +91,21 @@ createServer(async (req, res) => {
     res.writeHead(400);
     res.end("Bad request");
   }
-}).listen(port, host, () => console.log(`Holdfast at http://${host}:${port}`));
+}
+
+createServer((req, res) => {
+  serveRequest(req, res).catch((error) => {
+    // oxlint-disable-next-line no-console -- Surface unexpected request failures instead of leaving a rejected promise unhandled.
+    console.error("Local request failed:", error);
+
+    if (res.headersSent) {
+      res.destroy();
+    } else {
+      res.writeHead(500);
+      res.end("Server error");
+    }
+  });
+}).listen(port, host, () => {
+  // oxlint-disable-next-line no-console -- The local server reports its listening URL to the operator.
+  console.log(`Holdfast at http://${host}:${port}`);
+});

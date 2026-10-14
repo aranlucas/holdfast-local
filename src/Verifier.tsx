@@ -1,20 +1,8 @@
 import { z } from "zod";
 import { useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  FileText,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, FileText } from "lucide-react";
 import type { EvidenceKey, Policy, Purchase } from "./model";
-import {
-  formatDate,
-  returnDeadline,
-  validatePurchase,
-  warrantyDeadline,
-} from "./model";
+import { formatDate, returnDeadline, validatePurchase, warrantyDeadline } from "./model";
 import { samplePolicy } from "./samples";
 import { Field, Modal, Notice } from "./ui";
 
@@ -62,9 +50,9 @@ export function Verifier({
   queueProgress?: { current: number; total: number };
 }) {
   const [p, setP] = useState(initial);
-    const [step, setStep] = useState(0);
-    const [confirmed, setConfirmed] = useState([false, false, false]);
-    const [errors, setErrors] = useState<string[]>([]);
+  const [step, setStep] = useState(0);
+  const [confirmed, setConfirmed] = useState([false, false, false]);
+  const [errors, setErrors] = useState<string[]>([]);
 
   const titles = ["The purchase", "The date", "The policy"];
 
@@ -72,9 +60,9 @@ export function Verifier({
     setP((old) => {
       const next = { ...old, [key]: value };
 
-      const evidenceField = (
-        ["merchant", "item", "purchaseDate", "amount"] as const
-      ).find((field) => field === key);
+      const evidenceField = (["merchant", "item", "purchaseDate", "amount"] as const).find(
+        (field) => field === key,
+      );
 
       if (evidenceField !== undefined) {
         next.evidence = {
@@ -121,24 +109,24 @@ export function Verifier({
 
     setErrors([]);
 
-    if (step < 2) {setStep(step + 1);}
-    else
-      {void onSave({
+    if (step < 2) {
+      setStep(step + 1);
+    } else {
+      void onSave({
         ...p,
         confirmedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      }).catch((e) =>
-        setErrors([
-          e instanceof Error ? e.message : "Could not save. Try again.",
-        ]),
-      );}
+      }).catch((e) => setErrors([e instanceof Error ? e.message : "Could not save. Try again."]));
+    }
   }
 
   return (
     <Modal
       title={initial.confirmedAt ? "Review your facts" : "Verify three facts"}
       onClose={() => {
-        if (!busy) {onClose();}
+        if (!busy) {
+          onClose();
+        }
       }}
       wide
     >
@@ -150,11 +138,9 @@ export function Verifier({
           </p>
           <ol>
             {titles.map((title, i) => (
-              <li
-                key={title}
-                className={step === i ? "current" : step > i ? "done" : ""}
-              >
+              <li key={title} className={step === i ? "current" : step > i ? "done" : ""}>
                 <button
+                  type="button"
                   onClick={() => {
                     if (i <= step) {
                       setStep(i);
@@ -173,9 +159,7 @@ export function Verifier({
             <FileText size={20} />
             <strong>{p.sourceLabel}</strong>
             <span>
-              {p.synthetic
-                ? "Synthetic document · fictional terms"
-                : "Stays on this device"}
+              {p.synthetic ? "Synthetic document · fictional terms" : "Stays on this device"}
             </span>
           </div>
         </aside>
@@ -186,8 +170,7 @@ export function Verifier({
                 Item {queueProgress.current} of {queueProgress.total} · {p.item}
               </strong>
               <span>
-                Saved items stay on your shelf. Closing discards this item and
-                any remaining drafts.
+                Saved items stay on your shelf. Closing discards this item and any remaining drafts.
               </span>
             </div>
           ) : null}
@@ -248,20 +231,8 @@ export function Verifier({
                   />
                 </Field>
                 <Field label="Currency">
-                  <select
-                    value={p.currency}
-                    onChange={(e) => field("currency", e.target.value)}
-                  >
-                    {[
-                      "USD",
-                      "EUR",
-                      "GBP",
-                      "CAD",
-                      "AUD",
-                      "JPY",
-                      "CHF",
-                      "INR",
-                    ].map((c) => (
+                  <select value={p.currency} onChange={(e) => field("currency", e.target.value)}>
+                    {["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CHF", "INR"].map((c) => (
                       <option key={c}>{c}</option>
                     ))}
                   </select>
@@ -308,8 +279,7 @@ export function Verifier({
                   Dates are calendar days.
                   <br />
                   <span>
-                    We do not infer midnight cutoffs, shipping time, holidays,
-                    or store hours.
+                    We do not infer midnight cutoffs, shipping time, holidays, or store hours.
                   </span>
                 </p>
               </div>
@@ -324,15 +294,11 @@ export function Verifier({
                     onChange={(e) =>
                       policy(
                         "returnMode",
-                        z
-                          .enum(["unknown", "days", "date", "none"])
-                          .parse(e.target.value),
+                        z.enum(["unknown", "days", "date", "none"]).parse(e.target.value),
                       )
                     }
                   >
-                    <option value="unknown">
-                      Unknown — verify with merchant
-                    </option>
+                    <option value="unknown">Unknown — verify with merchant</option>
                     <option value="days">A number of calendar days</option>
                     <option value="date">An exact end date</option>
                     <option value="none">No stated return window</option>
@@ -340,15 +306,14 @@ export function Verifier({
                 </Field>
                 {p.synthetic ? (
                   <button
+                    type="button"
                     className="text-button"
                     onClick={() => {
                       setP((old) => ({
                         ...old,
                         policy: samplePolicy(old.item),
                       }));
-                      setConfirmed((old) =>
-                        old.map((v, i) => (i === 2 ? false : v)),
-                      );
+                      setConfirmed((old) => old.map((v, i) => (i === 2 ? false : v)));
                     }}
                   >
                     Use fictional sample policy
@@ -364,21 +329,14 @@ export function Verifier({
                         min="1"
                         max="3650"
                         value={p.policy.returnDays}
-                        onChange={(e) =>
-                          policy("returnDays", Number(e.target.value))
-                        }
+                        onChange={(e) => policy("returnDays", Number(e.target.value))}
                       />
                     </Field>
                     <Field label="Return window starts on">
                       <select
                         value={p.policy.startOn}
                         onChange={(e) =>
-                          policy(
-                            "startOn",
-                            z
-                              .enum(["purchase", "arrival"])
-                              .parse(e.target.value),
-                          )
+                          policy("startOn", z.enum(["purchase", "arrival"]).parse(e.target.value))
                         }
                       >
                         <option value="purchase">Purchase date</option>
@@ -392,8 +350,7 @@ export function Verifier({
                       checked={p.policy.countStart}
                       onChange={(e) => policy("countStart", e.target.checked)}
                     />
-                    Count the start date as day 1{" "}
-                    <span className="quiet">(otherwise day 0)</span>
+                    Count the start date as day 1 <span className="quiet">(otherwise day 0)</span>
                   </label>
                 </>
               ) : null}
@@ -414,15 +371,11 @@ export function Verifier({
                   onChange={(e) =>
                     policy(
                       "warrantyMode",
-                      z
-                        .enum(["unknown", "months", "date", "none"])
-                        .parse(e.target.value),
+                      z.enum(["unknown", "months", "date", "none"]).parse(e.target.value),
                     )
                   }
                 >
-                  <option value="unknown">
-                    Unknown — coverage needs verification
-                  </option>
+                  <option value="unknown">Unknown — coverage needs verification</option>
                   <option value="months">A number of calendar months</option>
                   <option value="date">An exact end date</option>
                   <option value="none">No stated warranty</option>
@@ -436,9 +389,7 @@ export function Verifier({
                       min="1"
                       max="1200"
                       value={p.policy.warrantyMonths}
-                      onChange={(e) =>
-                        policy("warrantyMonths", Number(e.target.value))
-                      }
+                      onChange={(e) => policy("warrantyMonths", Number(e.target.value))}
                     />
                   </Field>
                   <Field label="Warranty starts on">
@@ -533,9 +484,7 @@ export function Verifier({
               type="checkbox"
               checked={confirmed[step]}
               onChange={(e) =>
-                setConfirmed((old) =>
-                  old.map((v, i) => (i === step ? e.target.checked : v)),
-                )
+                setConfirmed((old) => old.map((v, i) => (i === step ? e.target.checked : v)))
               }
             />
             <span>
@@ -548,28 +497,23 @@ export function Verifier({
           </label>
           <div className="wizard-actions">
             <button
+              type="button"
               className="text-button"
               disabled={busy}
               onClick={() => {
                 if (step) {
                   setStep(step - 1);
                   setErrors([]);
-                } else {onClose();}
+                } else {
+                  onClose();
+                }
               }}
             >
               <ArrowLeft size={16} />
-              {step
-                ? "Back"
-                : queueProgress
-                  ? "Discard remaining items"
-                  : "Cancel"}
+              {step ? "Back" : queueProgress ? "Discard remaining items" : "Cancel"}
             </button>
-            <button className="button primary" onClick={next} disabled={busy}>
-              {busy
-                ? "Saving…"
-                : step === 2
-                  ? "Save to my shelf"
-                  : "Confirm & continue"}
+            <button type="button" className="button primary" onClick={next} disabled={busy}>
+              {busy ? "Saving…" : step === 2 ? "Save to my shelf" : "Confirm & continue"}
               {step === 2 ? <Check size={17} /> : <ArrowRight size={17} />}
             </button>
           </div>

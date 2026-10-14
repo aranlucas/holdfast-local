@@ -48,17 +48,13 @@ describe("calendar dates independent of timestamps", () => {
     ["2026-12-31", 1, "2027-01-01"],
     ["2026-03-08", 1, "2026-03-09"],
     ["2026-11-01", 1, "2026-11-02"],
-  ])("adds days across boundaries %s", (date, n, result) =>
-    expect(addDays(date, n)).toBe(result),
-  );
+  ])("adds days across boundaries %s", (date, n, result) => expect(addDays(date, n)).toBe(result));
   it.each([
     ["2024-01-31", 1, "2024-02-29"],
     ["2026-01-31", 1, "2026-02-28"],
     ["2024-02-29", 12, "2025-02-28"],
     ["2026-12-31", 2, "2027-02-28"],
-  ])("clamps month-end %s", (date, n, result) =>
-    expect(addMonths(date, n)).toBe(result),
-  );
+  ])("clamps month-end %s", (date, n, result) => expect(addMonths(date, n)).toBe(result));
   it("distinguishes local today in time zones", () => {
     const now = new Date("2026-10-02T00:30:00Z");
     expect(todayInZone("America/Los_Angeles", now)).toBe("2026-10-01");
@@ -164,9 +160,7 @@ describe("transparent local extraction", () => {
     expect(p.policy.returnMode).toBe("unknown");
   });
   it("leaves ambiguous slash dates empty", () => {
-    const p = extractReceipt(
-      "Merchant: Shop\nDate: 02/03/2026\nItem: Hat\nTotal: USD 20.00",
-    );
+    const p = extractReceipt("Merchant: Shop\nDate: 02/03/2026\nItem: Hat\nTotal: USD 20.00");
 
     expect(p.purchaseDate).toBe("");
     expect(p.evidence.purchaseDate.note).toContain("Ambiguous");
@@ -183,9 +177,7 @@ describe("transparent local extraction", () => {
   it("does not treat numeric month/day dates as ISO", () =>
     expect(extractReceipt("Date: 31/12/2026").purchaseDate).toBe(""));
   it("preserves an image as evidence without fake OCR", async () => {
-    const p = await readReceiptFile(
-      new File(["image data"], "photo.png", { type: "image/png" }),
-    );
+    const p = await readReceiptFile(new File(["image data"], "photo.png", { type: "image/png" }));
 
     expect(p.item).toBe("");
     expect(p.attachments[0].name).toBe("photo.png");
@@ -224,14 +216,10 @@ describe("portable, safe proof and backup exports", () => {
     ];
     const packet = await exportPacket(p);
     const zip = await JSZip.loadAsync(await packet.arrayBuffer());
-    expect(
-      await zip.file("evidence/original-receipt.txt")!.async("string"),
-    ).toBe("abc");
+    expect(await zip.file("evidence/original-receipt.txt")!.async("string")).toBe("abc");
     expect(zip.file("proof-packet.html")).not.toBeNull();
     expect(zip.file("checklist.md")).not.toBeNull();
-    expect(await zip.file("purchase.json")!.async("string")).not.toContain(
-      '"blob"',
-    );
+    expect(await zip.file("purchase.json")!.async("string")).not.toContain('"blob"');
   });
   it("round trips purchases, checklist state and original evidence", async () => {
     const p = fixture();
@@ -278,25 +266,21 @@ describe("portable, safe proof and backup exports", () => {
     const zip = await JSZip.loadAsync(await blob.arrayBuffer());
     zip.remove(`evidence/${p.id}/file-1`);
     const damaged = await zip.generateAsync({ type: "blob" });
-    await expect(
-      importBackup(new File([damaged], "damaged.zip")),
-    ).rejects.toThrow("Missing evidence");
+    await expect(importBackup(new File([damaged], "damaged.zip"))).rejects.toThrow(
+      "Missing evidence",
+    );
   });
 });
 
 it("labels a date with no purchase label as a suggestion", () => {
-  const p = extractReceipt(
-    "Merchant: Shop\nDelivery date: 2026-10-02\nItem: Hat",
-  );
+  const p = extractReceipt("Merchant: Shop\nDelivery date: 2026-10-02\nItem: Hat");
 
   expect(p.evidence.purchaseDate.confidence).toBe("medium");
   expect(p.evidence.purchaseDate.note).toContain("delivery date");
 });
 
 it("discloses the editable default for an unspecified dollar currency", () => {
-  const p = extractReceipt(
-    "Merchant: Shop\nDate: 2026-10-02\nItem: Hat\nTotal: $19.00",
-  );
+  const p = extractReceipt("Merchant: Shop\nDate: 2026-10-02\nItem: Hat\nTotal: $19.00");
 
   expect(p.evidence.amount.note).toContain("USD is an editable default");
 });
@@ -304,9 +288,7 @@ it("discloses the editable default for an unspecified dollar currency", () => {
 it("rejects invalid backup primitives before persistence", () => {
   const p = fixture();
   expect(() => validateBackupRecord({ ...p, synthetic: "false" })).toThrow();
-  expect(() =>
-    validateBackupRecord({ ...p, checklist: { receipt: "yes" } }),
-  ).toThrow();
+  expect(() => validateBackupRecord({ ...p, checklist: { receipt: "yes" } })).toThrow();
   expect(() =>
     validateBackupRecord({
       ...p,

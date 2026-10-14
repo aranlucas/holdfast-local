@@ -14,14 +14,16 @@ export function Importer({
   onReady: (p: Purchase) => void;
 }) {
   const [text, setText] = useState("");
-    const [error, setError] = useState("");
-    const [busy, setBusy] = useState(false);
-    const [drag, setDrag] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [drag, setDrag] = useState(false);
 
   const input = useRef<HTMLInputElement>(null);
 
   async function fileReady(file?: File) {
-    if (!file) {return;}
+    if (!file) {
+      return;
+    }
 
     setError("");
     setBusy(true);
@@ -37,7 +39,9 @@ export function Importer({
     } finally {
       setBusy(false);
 
-      if (input.current) {input.current.value = "";}
+      if (input.current) {
+        input.current.value = "";
+      }
     }
   }
 
@@ -45,12 +49,12 @@ export function Importer({
     <Modal
       title="Give your receipt a home"
       onClose={() => {
-        if (!busy) {onClose();}
+        if (!busy) {
+          onClose();
+        }
       }}
     >
-      <p className="modal-intro">
-        Drop it in. Verify three facts. Keep a plan and the proof.
-      </p>
+      <p className="modal-intro">Drop it in. Verify three facts. Keep a plan and the proof.</p>
       {error ? <Notice kind="error">{error}</Notice> : null}
       <div
         className={`drop-zone ${drag ? "dragging" : ""}`}
@@ -63,15 +67,16 @@ export function Importer({
           e.preventDefault();
           setDrag(false);
 
-          if (!busy) {void fileReady(e.dataTransfer.files[0]);}
+          if (!busy) {
+            void fileReady(e.dataTransfer.files[0]);
+          }
         }}
       >
         <Upload size={30} />
-        <strong>
-          {busy ? "Reading on your device…" : "Drop a receipt here"}
-        </strong>
+        <strong>{busy ? "Reading on your device…" : "Drop a receipt here"}</strong>
         <span>TXT · PDF · PNG · JPEG · WebP, up to 12 MB</span>
         <button
+          type="button"
           className="button secondary"
           onClick={() => input.current?.click()}
           disabled={busy}
@@ -88,6 +93,7 @@ export function Importer({
         />
       </div>
       <button
+        type="button"
         className="text-button multi-sample"
         disabled={busy}
         onClick={() => {
@@ -109,9 +115,7 @@ export function Importer({
         <span className="sr-only">Receipt text</span>
         <textarea
           aria-label="Receipt text"
-          placeholder={
-            "Merchant: …\nPurchase date: YYYY-MM-DD\nItem: …\nTotal: USD …"
-          }
+          placeholder={"Merchant: …\nPurchase date: YYYY-MM-DD\nItem: …\nTotal: USD …"}
           rows={7}
           maxLength={100000}
           value={text}
@@ -121,12 +125,10 @@ export function Importer({
       </label>
       <div className="import-actions">
         <button
+          type="button"
           className="text-button"
           onClick={() => {
-            const p = extractReceipt(
-              sampleText(),
-              "Synthetic Northline receipt",
-            );
+            const p = extractReceipt(sampleText(), "Synthetic Northline receipt");
 
             p.synthetic = true;
             onReady(p);
@@ -136,6 +138,7 @@ export function Importer({
           <Sparkles size={16} /> Use a synthetic receipt
         </button>
         <button
+          type="button"
           className="button primary"
           disabled={!text.trim() || busy}
           onClick={() => onReady(extractReceipt(text))}
@@ -144,9 +147,8 @@ export function Importer({
         </button>
       </div>
       <p className="quiet footnote">
-        <FileText size={15} /> PDFs with a text layer are read locally. Photos
-        stay as evidence; enter their facts manually. Multiple products get
-        separate verification and timelines.
+        <FileText size={15} /> PDFs with a text layer are read locally. Photos stay as evidence;
+        enter their facts manually. Multiple products get separate verification and timelines.
       </p>
     </Modal>
   );
