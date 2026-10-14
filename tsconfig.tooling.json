@@ -9,7 +9,7 @@
     "server.mjs",
     "scripts-build-sw.mjs",
     "playwright.config.ts",
-    "test/e2e/**/*.test.ts",
+    "test/e2e/**/*.e2e.ts",
     "test/**/*.mjs",
     "vitest.config.ts"
   ]
