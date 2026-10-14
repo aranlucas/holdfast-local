@@ -16,11 +16,11 @@ import {
   Upload,
   WifiOff,
 } from "lucide-react";
-import { Detail } from "./Detail";
-import { Importer } from "./Importer";
-import { Privacy } from "./Privacy";
-import { Timeline } from "./Timeline";
-import { Verifier } from "./Verifier";
+import { Detail } from "./detail";
+import { Importer } from "./importer";
+import { Privacy } from "./privacy";
+import { Timeline } from "./timeline";
+import { Verifier } from "./verifier";
 import { Notice } from "./ui";
 import {
   daysLeft,
@@ -35,10 +35,10 @@ import type { Purchase } from "./model";
 import { demoPurchases } from "./samples";
 import { clearPurchases, loadPurchases, saveMany, savePurchase } from "./storage";
 import { readReceiptFile } from "./extraction";
-import { ReceiptPicker } from "./ReceiptPicker";
-import { receiptItems } from "./receiptItems";
+import { ReceiptPicker } from "./receipt-picker";
+import { receiptItems } from "./receipt-items";
 
-function ItemIcon({ item }: { item: string }) {
+function ItemIcon({ item }: ItemIconProps) {
   return /headphone/i.test(item) ? (
     <Headphones size={25} strokeWidth={1.4} />
   ) : /lamp/i.test(item) ? (
@@ -154,7 +154,17 @@ export default function App() {
   }
 
   useEffect(() => {
-    void load();
+    loadPurchases()
+      .then((loadedPurchases) => {
+        setPurchases(loadedPurchases);
+
+        return setLoaded(true);
+      })
+      .catch(() =>
+        setError(
+          "Device storage is unavailable. Your saved cabinet could not be loaded. Retry, or allow browser storage for this address.",
+        ),
+      );
     const net = () => setOnline(navigator.onLine);
     window.addEventListener("online", net);
     window.addEventListener("offline", net);
@@ -173,7 +183,7 @@ export default function App() {
         .catch(() => setOfflineReady(false));
     }
   }, []);
-  useEffect(() => {
+  useEffect((): void | (() => void) => {
     if (!toast) {
       return;
     }
@@ -327,16 +337,25 @@ export default function App() {
         (filter === "all" || returnStatus(p, today).key === filter) &&
         `${p.item} ${p.merchant} ${p.orderNumber}`.toLowerCase().includes(search.toLowerCase()),
     )
+    // oxlint-disable-next-line unicorn/no-array-sort -- Sort only this newly filtered or mapped array; the browser target remains ES2022.
     .sort((a, b) => {
       const da = returnDeadline(a).date;
       const db = returnDeadline(b).date;
 
-      return (da || "9999").localeCompare(db || "9999");
+      return (da ?? "9999").localeCompare(db ?? "9999");
     });
 
-  const spotlight = soon.sort((a, b) =>
-    returnDeadline(a).date!.localeCompare(returnDeadline(b).date!),
-  )[0];
+  const spotlightEntry = soon
+    .flatMap((purchase) => {
+      const date = returnDeadline(purchase).date;
+      const left = daysLeft(date, today);
+
+      return date && left !== null ? [{ purchase, date, left }] : [];
+    })
+    // oxlint-disable-next-line unicorn/no-array-sort -- Sort only this newly filtered or mapped array; the browser target remains ES2022.
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+
+  const spotlight = spotlightEntry?.purchase;
 
   const detail = purchases.find((p) => p.id === selected);
 
@@ -346,19 +365,12 @@ export default function App() {
         Skip to content
       </a>
       <aside className="sidebar">
-        <a
-          className="brand"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            setPage("shelf");
-          }}
-        >
+        <button type="button" className="brand" onClick={() => setPage("shelf")}>
           <img src="/icon.svg" width="36" height="36" alt="" />
           <span>
             holdfast<span className="brand-period">.</span>
           </span>
-        </a>
+        </button>
         <div className="nav-caption">LIFE AFTER CHECKOUT</div>
         <nav aria-label="Main navigation">
           <button
@@ -441,7 +453,13 @@ export default function App() {
             <div className="app-error">
               <Notice kind="error">{error}</Notice>
               {!loaded ? (
-                <button type="button" className="button secondary" onClick={() => void load()}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => {
+                    load().catch(() => setError("Device storage could not be loaded. Try again."));
+                  }}
+                >
                   Retry device storage
                 </button>
               ) : (
@@ -508,9 +526,9 @@ export default function App() {
                     <strong>A good time to decide.</strong>
                     <span>
                       {spotlight.item} · your recorded return date is{" "}
-                      {daysLeft(returnDeadline(spotlight).date, today) === 0
+                      {spotlightEntry?.left === 0
                         ? "today"
-                        : `in ${daysLeft(returnDeadline(spotlight).date, today)} days`}
+                        : `in ${spotlightEntry?.left ?? 0} days`}
                       .
                     </span>
                   </span>
@@ -665,7 +683,9 @@ export default function App() {
                     onDrop={(e) => {
                       e.preventDefault();
                       setDrag(false);
-                      void drop(e.dataTransfer.files[0]);
+                      drop(e.dataTransfer.files[0]).catch(() =>
+                        setError("Could not read this receipt. Try again."),
+                      );
                     }}
                   >
                     <div className="drop-icon">
@@ -751,3 +771,5 @@ function FileLines() {
     </svg>
   );
 }
+
+type ItemIconProps = { item: string };

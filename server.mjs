@@ -4,9 +4,13 @@ import { resolve, extname } from "node:path";
 
 const root = resolve("dist");
 
-const port = Number(process.env.PORT || 4319);
+const portSetting = process.env.PORT;
 
-const host = process.env.HOST || "127.0.0.1";
+const port = Number(portSetting === undefined || portSetting === "" ? 4319 : portSetting);
+
+const hostSetting = process.env.HOST;
+
+const host = hostSetting === undefined || hostSetting === "" ? "127.0.0.1" : hostSetting;
 
 const mime = new Map([
   [".html", "text/html; charset=utf-8"],

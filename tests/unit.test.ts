@@ -1,3 +1,4 @@
+import { required } from "./required";
 import { describe, expect, it } from "vitest";
 import {
   addDays,
@@ -65,7 +66,7 @@ describe("calendar dates independent of timestamps", () => {
     expect(daysLeft("2026-10-02", "2026-10-03")).toBe(-1);
   });
   it("rejects invalid dates in calculations", () =>
-    expect(() => addDays("2026-02-30", 1)).toThrow());
+    expect(() => addDays("2026-02-30", 1)).toThrow(/valid calendar date/));
 });
 
 describe("confirmed item-specific policies", () => {
@@ -216,10 +217,17 @@ describe("portable, safe proof and backup exports", () => {
     ];
     const packet = await exportPacket(p);
     const zip = await JSZip.loadAsync(await packet.arrayBuffer());
-    expect(await zip.file("evidence/original-receipt.txt")!.async("string")).toBe("abc");
+    expect(
+      await required(
+        zip.file("evidence/original-receipt.txt"),
+        "Expected fixture API result",
+      ).async("string"),
+    ).toBe("abc");
     expect(zip.file("proof-packet.html")).not.toBeNull();
     expect(zip.file("checklist.md")).not.toBeNull();
-    expect(await zip.file("purchase.json")!.async("string")).not.toContain('"blob"');
+    expect(
+      await required(zip.file("purchase.json"), "Expected fixture API result").async("string"),
+    ).not.toContain('"blob"');
   });
   it("round trips purchases, checklist state and original evidence", async () => {
     const p = fixture();
@@ -240,7 +248,7 @@ describe("portable, safe proof and backup exports", () => {
     expect(await imported[0].attachments[0].blob.text()).toBe("abc");
   });
   it("rejects malformed or unsupported backup schemas", () => {
-    expect(() => validateBackupRecord({})).toThrow();
+    expect(() => validateBackupRecord({})).toThrow(/invalid_type/);
     const p = fixture();
     const malformed = { ...p, policy: { ...p.policy, returnMode: "evil" } };
     expect(() => validateBackupRecord(malformed)).toThrow("policy");
@@ -287,18 +295,18 @@ it("discloses the editable default for an unspecified dollar currency", () => {
 
 it("rejects invalid backup primitives before persistence", () => {
   const p = fixture();
-  expect(() => validateBackupRecord({ ...p, synthetic: "false" })).toThrow();
-  expect(() => validateBackupRecord({ ...p, checklist: { receipt: "yes" } })).toThrow();
+  expect(() => validateBackupRecord({ ...p, synthetic: "false" })).toThrow(/synthetic/);
+  expect(() => validateBackupRecord({ ...p, checklist: { receipt: "yes" } })).toThrow(/receipt/);
   expect(() =>
     validateBackupRecord({
       ...p,
       policy: { ...p.policy, returnDays: Infinity },
     }),
-  ).toThrow();
+  ).toThrow(/returnDays/);
   expect(() =>
     validateBackupRecord({
       ...p,
       evidence: { ...p.evidence, item: { ...p.evidence.item, line: 0 } },
     }),
-  ).toThrow();
+  ).toThrow(/line/);
 });

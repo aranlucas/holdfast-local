@@ -6,13 +6,7 @@ import { sampleText } from "./samples";
 import { todayInZone } from "./model";
 import type { Purchase } from "./model";
 
-export function Importer({
-  onClose,
-  onReady,
-}: {
-  onClose: () => void;
-  onReady: (p: Purchase) => void;
-}) {
+export function Importer({ onClose, onReady }: ImporterProps) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -68,7 +62,9 @@ export function Importer({
           setDrag(false);
 
           if (!busy) {
-            void fileReady(e.dataTransfer.files[0]);
+            fileReady(e.dataTransfer.files[0]).catch(() =>
+              setError("Could not read this document. Try again."),
+            );
           }
         }}
       >
@@ -153,3 +149,8 @@ export function Importer({
     </Modal>
   );
 }
+
+type ImporterProps = {
+  onClose: () => void;
+  onReady: (p: Purchase) => void;
+};

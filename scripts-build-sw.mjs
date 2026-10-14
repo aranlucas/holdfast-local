@@ -10,6 +10,7 @@ async function list(path) {
 
   for (const e of await readdir(path, { withFileTypes: true })) {
     if (e.isDirectory()) {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Keep depth-first asset order and bound filesystem work during offline-cache generation.
       files.push(...(await list(`${path}/${e.name}`)));
     } else {
       files.push(`${path}/${e.name}`);

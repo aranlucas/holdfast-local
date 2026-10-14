@@ -204,7 +204,17 @@ export function todayInZone(zone?: string, now = new Date()): string {
     day: "2-digit",
   }).formatToParts(now);
 
-  return ["year", "month", "day"].map((k) => parts.find((p) => p.type === k)!.value).join("-");
+  return ["year", "month", "day"]
+    .map((kind) => {
+      const part = parts.find((p) => p.type === kind);
+
+      if (!part) {
+        throw new Error(`Date formatter did not return a ${kind} part.`);
+      }
+
+      return part.value;
+    })
+    .join("-");
 }
 
 export function formatDate(date: string | null, long = false): string {

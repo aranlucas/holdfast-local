@@ -1,3 +1,7 @@
+import { required } from "./required";
+import { z } from "zod";
+import { validateBackupRecord } from "../src/exports";
+
 declare global {
   interface Window {
     holdfastBlockWrites: boolean;
@@ -8,10 +12,15 @@ import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { mkdir, readFile } from "node:fs/promises";
 import JSZip from "jszip";
-import AxeBuilder from "@axe-core/playwright";
+import { AxeBuilder } from "@axe-core/playwright";
 import ICAL from "ical.js";
 
-const evidence = process.env.HOLDFAST_EVIDENCE_DIR || "/tmp/holdfast-qa";
+const evidenceDirectory = process.env.HOLDFAST_EVIDENCE_DIR;
+
+const evidence =
+  evidenceDirectory === undefined || evidenceDirectory === ""
+    ? "/tmp/holdfast-qa"
+    : evidenceDirectory;
 
 async function open(page: Page) {
   await page.goto("/");
@@ -56,10 +65,12 @@ function makePDF() {
 
   let data = "%PDF-1.4\n";
   const offsets = [0];
-  objects.forEach((obj, i) => {
+
+  for (const [i, obj] of objects.entries()) {
     offsets.push(Buffer.byteLength(data));
     data += `${i + 1} 0 obj\n${obj}\nendobj\n`;
-  });
+  }
+
   const xref = Buffer.byteLength(data);
   data += `xref\n0 6\n0000000000 65535 f \n${offsets
     .slice(1)
@@ -127,9 +138,17 @@ test("desktop shelf, filters, timeline, packet and original data stay local", as
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export proof packet", exact: true }).click();
   const file = await download;
-  const zip = await JSZip.loadAsync(await readFile((await file.path())!));
+
+  const zip = await JSZip.loadAsync(
+    await readFile(required(await file.path(), "Expected fixture API result")),
+  );
+
   expect(Object.keys(zip.files)).toContain("proof-packet.html");
-  const html = await zip.file("proof-packet.html")!.async("string");
+
+  const html = await required(zip.file("proof-packet.html"), "Expected fixture API result").async(
+    "string",
+  );
+
   expect(html).toContain("Unopened. Original cable in the box.");
   expect(html).toContain("SYNTHETIC-123");
   expect(html).toContain("Synthetic");
@@ -243,11 +262,18 @@ test("local PDF text layer, failed import retry, attachment bytes and packet", a
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export proof packet", exact: true }).click();
 
-  const zip = await JSZip.loadAsync(await readFile((await (await download).path())!));
+  const zip = await JSZip.loadAsync(
+    await readFile(required(await (await download).path(), "Expected fixture API result")),
+  );
 
-  const pdfName = Object.keys(zip.files).find((n) => n.endsWith("-receipt.pdf"))!;
+  const pdfName = required(
+    Object.keys(zip.files).find((n) => n.endsWith("-receipt.pdf")),
+    "Expected fixture API result",
+  );
 
-  expect(await zip.file(pdfName)!.async("nodebuffer")).toEqual(makePDF());
+  expect(
+    await required(zip.file(pdfName), "Expected fixture API result").async("nodebuffer"),
+  ).toEqual(makePDF());
   await page.getByRole("button", { name: "Close dialog" }).click();
   await page.reload();
   await page.getByRole("button", { name: "Open Small desk clock" }).click();
@@ -267,7 +293,7 @@ test("backup restore, malformed backup recovery, clear and closed outcomes", asy
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download device backup" }).click();
   const backup = await download;
-  const path = (await backup.path())!;
+  const path = required(await backup.path(), "Expected fixture API result");
   await backup.saveAs(`${evidence}/holdfast-synthetic-backup.zip`);
   await page.getByLabel("Backup file", { exact: true }).setInputFiles({
     name: "bad.zip",
@@ -374,10 +400,12 @@ test("keyboard focus trap and escape restore focus", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog")).toBeVisible();
 
+  /* oxlint-disable no-await-in-loop -- Each key press must settle before checking the resulting focus. */
   for (let i = 0; i < 15; i++) {
     await page.keyboard.press("Tab");
     expect(await page.evaluate(() => !!document.activeElement?.closest("dialog"))).toBe(true);
   }
+  /* oxlint-enable no-await-in-loop */
 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -388,6 +416,7 @@ test("accessible names, landmarks and AA contrast on desktop and mobile", async 
   await open(page);
   await demo(page);
 
+  /* oxlint-disable no-await-in-loop -- A single page must finish each viewport change before its accessibility audit. */
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
 
@@ -405,6 +434,7 @@ test("accessible names, landmarks and AA contrast on desktop and mobile", async 
       })),
     ).toEqual([]);
   }
+  /* oxlint-enable no-await-in-loop */
 
   await page.getByRole("button", { name: "Open Studio wireless headphones" }).click();
 
@@ -425,6 +455,7 @@ test("accessible names, landmarks and AA contrast on desktop and mobile", async 
 
 test("write failure keeps the verified draft and succeeds on retry", async ({ page }) => {
   await page.addInitScript(() => {
+    // oxlint-disable-next-line typescript/unbound-method -- Failure injection deliberately captures the method and forwards its original receiver with apply(this).
     const put = IDBObjectStore.prototype.put;
     Object.defineProperty(window, "holdfastBlockWrites", {
       value: true,
@@ -466,6 +497,7 @@ test("write failure keeps the verified draft and succeeds on retry", async ({ pa
 });
 
 test("saved calendar dates stay fixed across browser time zones", async ({ browser }) => {
+  /* oxlint-disable no-await-in-loop -- Run each ordered browser flow and close its context before opening the next zone. */
   for (const timezoneId of ["America/Los_Angeles", "Pacific/Kiritimati"]) {
     const context = await browser.newContext({ timezoneId });
     const page = await context.newPage();
@@ -494,6 +526,7 @@ test("saved calendar dates stay fixed across browser time zones", async ({ brows
     ).toBeVisible();
     await context.close();
   }
+  /* oxlint-enable no-await-in-loop */
 });
 
 async function saveUnknown(page: Page) {
@@ -562,7 +595,9 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
   const file = await cal;
   await file.saveAs(`${evidence}/holdfast-synthetic-recorded-dates.ics`);
 
-  const calendar = new ICAL.Component(ICAL.parse(await readFile((await file.path())!, "utf8")));
+  const calendar = ICAL.Component.fromString(
+    await readFile(required(await file.path(), "Expected fixture API result"), "utf8"),
+  );
 
   const events = calendar.getAllSubcomponents("vevent");
   expect(events).toHaveLength(2);
@@ -573,23 +608,40 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
   const backup = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download device backup" }).click();
   const archive = await backup;
-  const zip = await JSZip.loadAsync(await readFile((await archive.path())!));
-  const data = JSON.parse(await zip.file("holdfast.json")!.async("string"));
-  expect(data.purchases).toHaveLength(2);
 
-  const lamp = data.purchases.find((p: { item: string }) => p.item === "Bedside lamp");
+  const zip = await JSZip.loadAsync(
+    await readFile(required(await archive.path(), "Expected fixture API result")),
+  );
 
-  const clock = data.purchases.find((p: { item: string }) => p.item === "Leap clock");
-
-  expect(lamp.amount).toBe("47.00");
-  expect(lamp.policy.returnMode).toBe("unknown");
-  expect(clock.policy.returnDays).toBe(1);
-
-  for (const p of data.purchases) {
-    expect(await zip.file(`evidence/${p.id}/${p.attachments[0].id}`)!.async("string")).toBe(
-      receipt,
+  const data = z
+    .object({ purchases: z.array(z.unknown()) })
+    .parse(
+      JSON.parse(
+        await required(zip.file("holdfast.json"), "Expected fixture API result").async("string"),
+      ),
     );
+
+  const purchases = data.purchases.map((record) => validateBackupRecord(record));
+  expect(purchases).toHaveLength(2);
+
+  const lamp = purchases.find((p) => p.item === "Bedside lamp");
+
+  const clock = purchases.find((p) => p.item === "Leap clock");
+
+  expect(required(lamp, "Expected lamp purchase").amount).toBe("47.00");
+  expect(required(lamp, "Expected lamp purchase").policy.returnMode).toBe("unknown");
+  expect(required(clock, "Expected clock purchase").policy.returnDays).toBe(1);
+
+  /* oxlint-disable no-await-in-loop -- Inspect archived receipt bytes sequentially to keep only one evidence buffer active. */
+  for (const p of purchases) {
+    expect(
+      await required(
+        zip.file(`evidence/${p.id}/${p.attachments[0].id}`),
+        "Expected fixture API result",
+      ).async("string"),
+    ).toBe(receipt);
   }
+  /* oxlint-enable no-await-in-loop */
 
   await page.getByRole("button", { name: "Timeline", exact: true }).click();
   await page.getByRole("button", { name: "Returns", exact: true }).click();
@@ -601,8 +653,8 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
   await page.getByRole("button", { name: "Export visible dates (.ics)" }).click();
   const exported = await visibleCal;
   expect(
-    new ICAL.Component(
-      ICAL.parse(await readFile((await exported.path())!, "utf8")),
+    ICAL.Component.fromString(
+      await readFile(required(await exported.path(), "Expected fixture API result"), "utf8"),
     ).getAllSubcomponents("vevent"),
   ).toHaveLength(1);
   await page.reload();
@@ -652,6 +704,7 @@ test("a failed second-item save retains its place and retries without duplicate 
   page,
 }) => {
   await page.addInitScript(() => {
+    // oxlint-disable-next-line typescript/unbound-method -- Failure injection deliberately captures the method and forwards its original receiver with apply(this).
     const put = IDBObjectStore.prototype.put;
     Object.defineProperty(window, "holdfastBlockWrites", {
       value: false,

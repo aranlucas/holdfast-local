@@ -2,18 +2,10 @@ import { useState } from "react";
 import { ArrowRight, FileText } from "lucide-react";
 import type { Purchase } from "./model";
 import { money } from "./model";
-import { itemDraft, receiptItems } from "./receiptItems";
+import { itemDraft, receiptItems } from "./receipt-items";
 import { Modal, Notice } from "./ui";
 
-export function ReceiptPicker({
-  receipt,
-  onClose,
-  onReady,
-}: {
-  receipt: Purchase;
-  onClose: () => void;
-  onReady: (p: Purchase[]) => void;
-}) {
+export function ReceiptPicker({ receipt, onClose, onReady }: ReceiptPickerProps) {
   const matches = receiptItems(receipt.receiptText);
   const candidates = matches.slice(0, 100);
 
@@ -33,9 +25,15 @@ export function ReceiptPicker({
       ) : null}
       <div className="receipt-picks">
         {candidates.map((c, i) => (
-          <label key={c.line} className="receipt-pick">
+          <label
+            key={c.line}
+            className="receipt-pick"
+            htmlFor={`receipt-line-${c.line}`}
+            aria-label={c.item}
+          >
             <input
               type="checkbox"
+              id={`receipt-line-${c.line}`}
               checked={selected.includes(i)}
               disabled={selected.length >= 20 && !selected.includes(i)}
               onChange={(e) =>
@@ -85,3 +83,9 @@ export function ReceiptPicker({
     </Modal>
   );
 }
+
+type ReceiptPickerProps = {
+  receipt: Purchase;
+  onClose: () => void;
+  onReady: (p: Purchase[]) => void;
+};

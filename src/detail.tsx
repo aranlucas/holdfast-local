@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   CalendarDays,
@@ -25,19 +25,7 @@ import { MAX_FILE_BYTES } from "./extraction";
 import { Field, Modal, Notice } from "./ui";
 import { calendarBlob, calendarEvents } from "./calendar";
 
-export function Detail({
-  p,
-  onClose,
-  onEdit,
-  onSave,
-  busy,
-}: {
-  p: Purchase;
-  onClose: () => void;
-  onEdit: () => void;
-  onSave: (p: Purchase) => Promise<void>;
-  busy: boolean;
-}) {
+export function Detail({ p, onClose, onEdit, onSave, busy }: DetailProps) {
   const [notes, setNotes] = useState(p.notes);
   const [serial, setSerial] = useState(p.serialNumber);
   const [error, setError] = useState("");
@@ -51,19 +39,22 @@ export function Detail({
   const status = returnStatus(p);
   const done = CHECKLIST.filter((c) => p.checklist[c.id]).length;
 
-  async function save(next: Purchase) {
-    setError("");
+  const save = useCallback(
+    async (next: Purchase) => {
+      setError("");
 
-    try {
-      await onSave({ ...next, updatedAt: new Date().toISOString() });
+      try {
+        await onSave({ ...next, updatedAt: new Date().toISOString() });
 
-      return true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save. Try again.");
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not save. Try again.");
 
-      return false;
-    }
-  }
+        return false;
+      }
+    },
+    [onSave],
+  );
 
   async function packet() {
     setExporting(true);
@@ -247,10 +238,11 @@ export function Detail({
             </div>
             <div className="checklist">
               {CHECKLIST.map((c) => (
-                <label key={c.id}>
+                <label key={c.id} htmlFor={`checklist-${c.id}`} aria-label={c.title}>
                   <input
                     type="checkbox"
-                    checked={!!p.checklist[c.id]}
+                    id={`checklist-${c.id}`}
+                    checked={p.checklist[c.id]}
                     disabled={busy}
                     onChange={(e) =>
                       void save({
@@ -374,6 +366,8 @@ export function Detail({
                   if (ok) {
                     setSaved(true);
                   }
+
+                  return ok;
                 })
               }
             >
@@ -402,3 +396,11 @@ export function Detail({
     </Modal>
   );
 }
+
+type DetailProps = {
+  p: Purchase;
+  onClose: () => void;
+  onEdit: () => void;
+  onSave: (p: Purchase) => Promise<void>;
+  busy: boolean;
+};

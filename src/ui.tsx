@@ -2,17 +2,7 @@ import { cloneElement, isValidElement, useEffect, useId, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { X } from "lucide-react";
 
-export function Modal({
-  title,
-  onClose,
-  children,
-  wide = false,
-}: {
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-  wide?: boolean;
-}) {
+export function Modal({ title, onClose, children, wide = false }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const id = useId();
@@ -43,7 +33,7 @@ export function Modal({
         }
 
         const nodes = Array.from(
-          ref.current!.querySelectorAll<HTMLElement>(
+          e.currentTarget.querySelectorAll<HTMLElement>(
             'button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex]:not([tabindex="-1"])',
           ),
         ).filter((node) => node.offsetParent !== null);
@@ -82,15 +72,7 @@ export function Modal({
 
 type FieldControlProps = { id?: string; "aria-describedby"?: string };
 
-export function Field({
-  label,
-  children,
-  hint,
-}: {
-  label: string;
-  children: ReactElement<FieldControlProps>;
-  hint?: ReactNode;
-}) {
+export function Field({ label, children, hint }: FieldProps) {
   const id = useId();
 
   return (
@@ -107,16 +89,28 @@ export function Field({
   );
 }
 
-export function Notice({
-  children,
-  kind = "info",
-}: {
-  children: ReactNode;
-  kind?: "info" | "error" | "success";
-}) {
+export function Notice({ children, kind = "info" }: NoticeProps) {
   return (
     <div className={`notice ${kind}`} role={kind === "error" ? "alert" : undefined}>
       {children}
     </div>
   );
 }
+
+type ModalProps = {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  wide?: boolean;
+};
+
+type FieldProps = {
+  label: string;
+  children: ReactElement<FieldControlProps>;
+  hint?: ReactNode;
+};
+
+type NoticeProps = {
+  children: ReactNode;
+  kind?: "info" | "error" | "success";
+};

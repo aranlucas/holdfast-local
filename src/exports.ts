@@ -19,11 +19,16 @@ export function safeName(name: string): string {
   );
 }
 
+const htmlEntities = new Map([
+  ["&", "&amp;"],
+  ["<", "&lt;"],
+  [">", "&gt;"],
+  ['"', "&quot;"],
+  ["'", "&#39;"],
+]);
+
 export function escapeHTML(value: string): string {
-  return value.replaceAll(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
-  );
+  return value.replaceAll(/[&<>"']/g, (c) => htmlEntities.get(c) ?? c);
 }
 
 function serializable(p: Purchase) {
@@ -83,6 +88,7 @@ export async function exportPacket(p: Purchase): Promise<Blob> {
   );
 
   for (const a of p.attachments) {
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence reads sequential and preserve archive insertion, validation and fail-fast order.
     zip.file(`evidence/${a.id}-${safeName(a.name)}`, await a.blob.arrayBuffer());
   }
 
@@ -106,6 +112,7 @@ export async function exportBackup(purchases: Purchase[]): Promise<Blob> {
 
   for (const p of purchases) {
     for (const a of p.attachments) {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence reads sequential and preserve archive insertion, validation and fail-fast order.
       zip.file(`evidence/${p.id}/${a.id}`, await a.blob.arrayBuffer());
     }
   }
@@ -212,16 +219,18 @@ const backupRecord = z
   });
 
 // Zod owns the untrusted-input boundary and preserves the precise parsed return contract.
-export const validateBackupRecord = backupRecord.parse;
+export const validateBackupRecord = backupRecord.parse.bind(backupRecord);
 
 const backupManifest = z.object({
   schemaVersion: z.literal(1),
   purchases: z.array(backupRecord).max(500),
 });
 
-const zipMetadata = z.object({
-  _data: z.object({ uncompressedSize: z.number().int().nonnegative() }),
-});
+const zipMetadata = z
+  .object({
+    _data: z.object({ uncompressedSize: z.number().int().nonnegative() }),
+  })
+  .transform(({ _data: data }) => data.uncompressedSize);
 
 export async function importBackup(file: File): Promise<Purchase[]> {
   if (file.size > 60 * 1024 * 1024) {
@@ -235,7 +244,7 @@ export async function importBackup(file: File): Promise<Purchase[]> {
     throw new Error("This is not a Holdfast backup ZIP.");
   }
 
-  const manifestSize = zipMetadata.parse(manifest)._data.uncompressedSize;
+  const manifestSize = zipMetadata.parse(manifest);
 
   if (manifestSize > 5 * 1024 * 1024) {
     throw new Error("Backup manifest is too large.");
@@ -261,7 +270,7 @@ export async function importBackup(file: File): Promise<Purchase[]> {
         throw new Error(`Missing evidence: ${a.name}`);
       }
 
-      const size = zipMetadata.parse(entry)._data.uncompressedSize;
+      const size = zipMetadata.parse(entry);
 
       total += size;
 
@@ -269,6 +278,7 @@ export async function importBackup(file: File): Promise<Purchase[]> {
         throw new Error("Backup evidence size is invalid or too large.");
       }
 
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence reads sequential and preserve archive insertion, validation and fail-fast order.
       const buffer = await entry.async("arraybuffer");
       attachments.push({ ...a, blob: new Blob([buffer], { type: a.type }) });
     }

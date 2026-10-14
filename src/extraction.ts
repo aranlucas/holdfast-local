@@ -1,3 +1,4 @@
+import type { TextContent } from "pdfjs-dist/types/src/display/api";
 import { blankPurchase, isDate } from "./model";
 import type { Evidence, EvidenceKey, Purchase } from "./model";
 
@@ -49,7 +50,7 @@ export function extractReceipt(text: string, label = "Pasted receipt"): Purchase
   function set(
     key: EvidenceKey,
     value: string,
-    line: { value: string; number: number },
+    line: ReceiptLine,
     confidence: Evidence["confidence"],
     note: string,
   ) {
@@ -125,7 +126,7 @@ export function extractReceipt(text: string, label = "Pasted receipt"): Purchase
   );
 
   if (total) {
-    const amount = total.value.match(/\d[\d,]*\.\d{2}|\d[\d,]*$/)?.[0]?.replaceAll(",", "") || "";
+    const amount = total.value.match(/\d[\d,]*\.\d{2}|\d[\d,]*$/)?.[0]?.replaceAll(",", "") ?? "";
 
     set(
       "amount",
@@ -136,7 +137,7 @@ export function extractReceipt(text: string, label = "Pasted receipt"): Purchase
     );
     const currency = total.value.match(/\b(USD|EUR|GBP|CAD|AUD)\b/i)?.[1];
     p.currency =
-      currency?.toUpperCase() ||
+      currency?.toUpperCase() ??
       (total.value.includes("€") ? "EUR" : total.value.includes("£") ? "GBP" : "USD");
 
     if (!currency && !total.value.includes("€") && !total.value.includes("£")) {
@@ -145,7 +146,7 @@ export function extractReceipt(text: string, label = "Pasted receipt"): Purchase
   }
 
   const dateLine =
-    lines.find((l) => /^(purchase date|date|purchased|transaction date)\s*:/i.test(l.value)) ||
+    lines.find((l) => /^(purchase date|date|purchased|transaction date)\s*:/i.test(l.value)) ??
     lines.find((l) => dateCandidate(l.value).value || dateCandidate(l.value).ambiguous);
 
   if (dateLine) {
@@ -176,7 +177,7 @@ export function extractReceipt(text: string, label = "Pasted receipt"): Purchase
   p.orderNumber =
     lines
       .find((l) => /^(order|receipt|transaction)(?: (?:number|no|id))?\s*[:#]/i.test(l.value))
-      ?.value.replace(/^(order|receipt|transaction)(?: (?:number|no|id))?\s*[:#]\s*/i, "") || "";
+      ?.value.replace(/^(order|receipt|transaction)(?: (?:number|no|id))?\s*[:#]\s*/i, "") ?? "";
 
   const policyLines = lines.filter((l) =>
     /(return|warranty|final sale|restocking|eligib)/i.test(l.value),
@@ -227,26 +228,9 @@ export async function readReceiptFile(file: File): Promise<Purchase> {
       const pages: string[] = [];
 
       for (let i = 1; i <= pdf.numPages; i++) {
+        // oxlint-disable-next-line eslint/no-await-in-loop -- Read PDF pages in document order with only one page extraction active at a time.
         const content = await (await pdf.getPage(i)).getTextContent();
-        let line = "";
-        const lines: string[] = [];
-
-        for (const item of content.items) {
-          if ("str" in item) {
-            line += item.str + " ";
-
-            if (item.hasEOL) {
-              lines.push(line.trim());
-              line = "";
-            }
-          }
-        }
-
-        if (line.trim()) {
-          lines.push(line.trim());
-        }
-
-        pages.push(lines.join("\n"));
+        pages.push(pdfPageText(content.items));
       }
 
       text = pages.join("\n\n");
@@ -300,4 +284,31 @@ export async function readReceiptFile(file: File): Promise<Purchase> {
   }
 
   return p;
+}
+
+type ReceiptLine = { value: string; number: number };
+
+/** Preserve PDF text item order and explicit line breaks during receipt extraction. */
+export function pdfPageText(items: TextContent["items"]): string {
+  let line = "";
+  const lines: string[] = [];
+
+  for (const item of items) {
+    if (!("str" in item)) {
+      continue;
+    }
+
+    line += item.str + " ";
+
+    if (item.hasEOL) {
+      lines.push(line.trim());
+      line = "";
+    }
+  }
+
+  if (line.trim()) {
+    lines.push(line.trim());
+  }
+
+  return lines.join("\n");
 }

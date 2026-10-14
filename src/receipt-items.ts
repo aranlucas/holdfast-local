@@ -41,9 +41,9 @@ export function receiptItems(text: string): ReceiptItem[] {
     return [
       {
         item,
-        amount: price?.[3].replaceAll(",", "") || "",
+        amount: price?.[3].replaceAll(",", "") ?? "",
         currency:
-          price?.[1]?.toUpperCase() ||
+          price?.[1]?.toUpperCase() ??
           (price?.[2] === "€" ? "EUR" : price?.[2] === "£" ? "GBP" : ""),
         line: i + 1,
         excerpt,

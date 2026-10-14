@@ -2,11 +2,14 @@ import { returnDeadline, warrantyDeadline } from "./model";
 import type { Purchase } from "./model";
 
 function textValue(value: string): string {
-  return value
-    .replaceAll("\\", String.raw`\\`)
-    .replaceAll(/\r\n|\r|\n/g, String.raw`\n`)
-    .replaceAll(/[,;]/g, String.raw`\$&`)
-    .replaceAll(/[\u0000-\u0008\x0B-\u001F\x7F]/g, "");
+  return (
+    value
+      .replaceAll("\\", String.raw`\\`)
+      .replaceAll(/\r\n|\r|\n/g, String.raw`\n`)
+      .replaceAll(/[,;]/g, String.raw`\$&`)
+      // oxlint-disable-next-line eslint/no-control-regex -- Calendar text must remove forbidden control bytes while preserving escaped line breaks.
+      .replaceAll(/[\u0000-\u0008\u000B-\u001F\u007F]/g, "")
+  );
 }
 
 function fold(line: string): string {
@@ -34,15 +37,21 @@ function fold(line: string): string {
 
 export function calendarEvents(purchases: Purchase[], kind = "all") {
   return purchases
-    .filter((p) => !!p.confirmedAt)
-    .flatMap((p) => [
-      { p, kind: "return", deadline: returnDeadline(p) },
-      { p, kind: "warranty", deadline: warrantyDeadline(p) },
-    ])
-    .filter(
-      (e) =>
-        e.deadline.state === "known" && !!e.deadline.date && (kind === "all" || e.kind === kind),
-    );
+    .flatMap((p) =>
+      p.confirmedAt
+        ? [
+            { p, kind: "return", deadline: returnDeadline(p) },
+            { p, kind: "warranty", deadline: warrantyDeadline(p) },
+          ]
+        : [],
+    )
+    .flatMap((e) => {
+      const { date } = e.deadline;
+
+      return e.deadline.state === "known" && date && (kind === "all" || e.kind === kind)
+        ? [{ ...e, date }]
+        : [];
+    });
 }
 
 export function calendarText(purchases: Purchase[], kind = "all", now = new Date()): string {
@@ -59,7 +68,7 @@ export function calendarText(purchases: Purchase[], kind = "all", now = new Date
   ];
 
   for (const e of calendarEvents(purchases, kind)) {
-    const date = e.deadline.date!;
+    const { date } = e;
 
     // DATE values are calendar days. DTEND is exclusive, including at 2199-12-31.
     const end = new Date(Date.parse(`${date}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
