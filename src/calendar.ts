@@ -2,11 +2,14 @@ import { returnDeadline, warrantyDeadline } from "./model";
 import type { Purchase } from "./model";
 
 function textValue(value: string): string {
-  return value
-    .replaceAll("\\", String.raw`\\`)
-    .replaceAll(/\r\n|\r|\n/g, String.raw`\n`)
-    .replaceAll(/[,;]/g, String.raw`\$&`)
-    .replaceAll(/[\u0000-\u0008\u000B-\u001F\u007F]/g, "");
+  return (
+    value
+      .replaceAll("\\", String.raw`\\`)
+      .replaceAll(/\r\n|\r|\n/g, String.raw`\n`)
+      .replaceAll(/[,;]/g, String.raw`\$&`)
+      // oxlint-disable-next-line eslint/no-control-regex -- Calendar text must remove forbidden control bytes while preserving escaped line breaks.
+      .replaceAll(/[\u0000-\u0008\u000B-\u001F\u007F]/g, "")
+  );
 }
 
 function fold(line: string): string {

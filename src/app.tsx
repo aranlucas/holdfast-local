@@ -337,6 +337,7 @@ export default function App() {
         (filter === "all" || returnStatus(p, today).key === filter) &&
         `${p.item} ${p.merchant} ${p.orderNumber}`.toLowerCase().includes(search.toLowerCase()),
     )
+    // oxlint-disable-next-line unicorn/no-array-sort -- Sort only this newly filtered or mapped array; the browser target remains ES2022.
     .sort((a, b) => {
       const da = returnDeadline(a).date;
       const db = returnDeadline(b).date;
@@ -351,6 +352,7 @@ export default function App() {
 
       return date && left !== null ? [{ purchase, date, left }] : [];
     })
+    // oxlint-disable-next-line unicorn/no-array-sort -- Sort only this newly filtered or mapped array; the browser target remains ES2022.
     .sort((a, b) => a.date.localeCompare(b.date))[0];
 
   const spotlight = spotlightEntry?.purchase;

@@ -23,6 +23,7 @@ export function Timeline({ purchases, onSelect }: TimelineProps) {
         ? [{ ...e, date, left }]
         : [];
     })
+    // oxlint-disable-next-line unicorn/no-array-sort -- Sort this fresh event array without requiring ES2023 Array.prototype.toSorted.
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const unknown = purchases.filter(

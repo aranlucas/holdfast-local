@@ -88,6 +88,7 @@ export async function exportPacket(p: Purchase): Promise<Blob> {
   );
 
   for (const a of p.attachments) {
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence reads sequential and preserve archive insertion, validation and fail-fast order.
     zip.file(`evidence/${a.id}-${safeName(a.name)}`, await a.blob.arrayBuffer());
   }
 
@@ -111,6 +112,7 @@ export async function exportBackup(purchases: Purchase[]): Promise<Blob> {
 
   for (const p of purchases) {
     for (const a of p.attachments) {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence reads sequential and preserve archive insertion, validation and fail-fast order.
       zip.file(`evidence/${p.id}/${a.id}`, await a.blob.arrayBuffer());
     }
   }
@@ -276,6 +278,7 @@ export async function importBackup(file: File): Promise<Purchase[]> {
         throw new Error("Backup evidence size is invalid or too large.");
       }
 
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence reads sequential and preserve archive insertion, validation and fail-fast order.
       const buffer = await entry.async("arraybuffer");
       attachments.push({ ...a, blob: new Blob([buffer], { type: a.type }) });
     }

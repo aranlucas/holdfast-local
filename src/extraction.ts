@@ -228,6 +228,7 @@ export async function readReceiptFile(file: File): Promise<Purchase> {
       const pages: string[] = [];
 
       for (let i = 1; i <= pdf.numPages; i++) {
+        // oxlint-disable-next-line eslint/no-await-in-loop -- Read PDF pages in document order with only one page extraction active at a time.
         const content = await (await pdf.getPage(i)).getTextContent();
         pages.push(pdfPageText(content.items));
       }

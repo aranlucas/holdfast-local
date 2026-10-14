@@ -400,10 +400,12 @@ test("keyboard focus trap and escape restore focus", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog")).toBeVisible();
 
+  /* oxlint-disable no-await-in-loop -- Each key press must settle before checking the resulting focus. */
   for (let i = 0; i < 15; i++) {
     await page.keyboard.press("Tab");
     expect(await page.evaluate(() => !!document.activeElement?.closest("dialog"))).toBe(true);
   }
+  /* oxlint-enable no-await-in-loop */
 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -414,6 +416,7 @@ test("accessible names, landmarks and AA contrast on desktop and mobile", async 
   await open(page);
   await demo(page);
 
+  /* oxlint-disable no-await-in-loop -- A single page must finish each viewport change before its accessibility audit. */
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
 
@@ -431,6 +434,7 @@ test("accessible names, landmarks and AA contrast on desktop and mobile", async 
       })),
     ).toEqual([]);
   }
+  /* oxlint-enable no-await-in-loop */
 
   await page.getByRole("button", { name: "Open Studio wireless headphones" }).click();
 
@@ -451,6 +455,7 @@ test("accessible names, landmarks and AA contrast on desktop and mobile", async 
 
 test("write failure keeps the verified draft and succeeds on retry", async ({ page }) => {
   await page.addInitScript(() => {
+    // oxlint-disable-next-line typescript/unbound-method -- Failure injection deliberately captures the method and forwards its original receiver with apply(this).
     const put = IDBObjectStore.prototype.put;
     Object.defineProperty(window, "holdfastBlockWrites", {
       value: true,
@@ -492,6 +497,7 @@ test("write failure keeps the verified draft and succeeds on retry", async ({ pa
 });
 
 test("saved calendar dates stay fixed across browser time zones", async ({ browser }) => {
+  /* oxlint-disable no-await-in-loop -- Run each ordered browser flow and close its context before opening the next zone. */
   for (const timezoneId of ["America/Los_Angeles", "Pacific/Kiritimati"]) {
     const context = await browser.newContext({ timezoneId });
     const page = await context.newPage();
@@ -520,6 +526,7 @@ test("saved calendar dates stay fixed across browser time zones", async ({ brows
     ).toBeVisible();
     await context.close();
   }
+  /* oxlint-enable no-await-in-loop */
 });
 
 async function saveUnknown(page: Page) {
@@ -625,6 +632,7 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
   expect(required(lamp, "Expected lamp purchase").policy.returnMode).toBe("unknown");
   expect(required(clock, "Expected clock purchase").policy.returnDays).toBe(1);
 
+  /* oxlint-disable no-await-in-loop -- Inspect archived receipt bytes sequentially to keep only one evidence buffer active. */
   for (const p of purchases) {
     expect(
       await required(
@@ -633,6 +641,7 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
       ).async("string"),
     ).toBe(receipt);
   }
+  /* oxlint-enable no-await-in-loop */
 
   await page.getByRole("button", { name: "Timeline", exact: true }).click();
   await page.getByRole("button", { name: "Returns", exact: true }).click();
@@ -695,6 +704,7 @@ test("a failed second-item save retains its place and retries without duplicate 
   page,
 }) => {
   await page.addInitScript(() => {
+    // oxlint-disable-next-line typescript/unbound-method -- Failure injection deliberately captures the method and forwards its original receiver with apply(this).
     const put = IDBObjectStore.prototype.put;
     Object.defineProperty(window, "holdfastBlockWrites", {
       value: false,

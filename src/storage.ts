@@ -19,6 +19,7 @@ export async function loadPurchases(): Promise<Purchase[]> {
   const database = await db();
 
   try {
+    // oxlint-disable-next-line unicorn/no-array-sort -- IndexedDB returned a fresh array; keep sorting compatible with the ES2022 browser target.
     return (await database.getAll("purchases")).sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
     );
@@ -48,6 +49,7 @@ export async function saveMany(purchases: Purchase[], replace = false): Promise<
     }
 
     for (const p of purchases) {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Wait for each write to complete so a failure stops subsequent writes before transaction cleanup.
       await tx.store.put(p);
     }
 
