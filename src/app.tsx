@@ -183,7 +183,7 @@ export default function App() {
         .catch(() => setOfflineReady(false));
     }
   }, []);
-  useEffect((): void | (() => void) => {
+  useEffect(() => {
     if (!toast) {
       return;
     }
