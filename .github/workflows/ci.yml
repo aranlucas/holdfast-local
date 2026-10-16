@@ -23,27 +23,25 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
         with:
           node-version-file: .node-version
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+          cache: true
+          require-lockfile: true
 
       - parallel:
           - name: Lint
-            run: npm run lint && npm run check:format
+            run: pnpm run lint && pnpm run check:format
 
           - name: Test
-            run: npm test
+            run: pnpm test
 
           - name: Build
-            run: npm run build
+            run: pnpm run build
 
       - name: Install Playwright Chromium
-        run: npx --no-install playwright install --with-deps chromium --only-shell
+        run: pnpm exec playwright install --with-deps chromium --only-shell
 
       - name: Run browser tests
-        run: npm run test:e2e
+        run: pnpm run test:e2e

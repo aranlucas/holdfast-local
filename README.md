@@ -6,15 +6,15 @@ Private source repository: https://github.com/aranlucas/holdfast-local
 
 ## Run
 
-Requires Node.js 22.12+ (CI uses Node 24; also tested locally on Node 26.10) and npm. No account, credentials, AI service, database server, or environment secrets.
+Requires Node.js 22.12+ (CI uses Node 24; also tested locally on Node 26.10) and pnpm 12.11.2. No account, credentials, AI service, database server, or environment secrets.
 
 ```sh
-npm ci
-npm run build
-npm start
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm start
 ```
 
-Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `npm run dev` at **https://holdfast.localhost** (offline caching is disabled in development). `npm run dev` runs through [Portless](https://github.com/vercel-labs/portless) (a dev dependency); its first run may ask for `sudo` to bind port 443 and trust a local certificate.
+Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `pnpm run dev` at **https://holdfast.localhost** (offline caching is disabled in development). `pnpm run dev` runs through [Portless](https://github.com/vercel-labs/portless) (a dev dependency); its first run may ask for `sudo` to bind port 443 and trust a local certificate.
 
 The portable built-app ZIP includes `dist/` and `server.mjs`; unzip and run `node server.mjs` without installing dependencies.
 
@@ -45,11 +45,11 @@ Local storage is **not an encrypted vault**. Anyone using this browser profile c
 ## Verification
 
 ```sh
-npm test
-npm run build
-npx playwright install chromium
-npm run test:e2e
-npm run check:format
+pnpm test
+pnpm run build
+pnpm exec playwright install chromium
+pnpm run test:e2e
+pnpm run check:format
 ```
 
 Hosted CI runs formatting, unit tests, the production build, and the browser suite with one Chromium worker on pull requests and main-branch pushes. It does not deploy.

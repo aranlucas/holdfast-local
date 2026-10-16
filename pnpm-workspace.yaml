@@ -1,5 +1,5 @@
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
 minimumReleaseAgeExclude:
   - "@aranlucas/oxforge@0.1.1"
   - "@aranlucas/oxlint-plugin-anti-slop@0.1.0"
