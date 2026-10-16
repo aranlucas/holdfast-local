@@ -1,3 +1,4 @@
+import process from "node:process";
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
@@ -20,7 +21,7 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: "npm start",
+    command: "pnpm start",
     url: "http://127.0.0.1:4319",
     reuseExistingServer: true,
     timeout: 15000,
