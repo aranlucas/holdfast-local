@@ -213,13 +213,14 @@ export async function readReceiptFile(file: File): Promise<Purchase> {
     const pdfjs = await import("pdfjs-dist");
     const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
     pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
-    let pdf;
+    let loadingTask: ReturnType<typeof pdfjs.getDocument> | undefined;
 
     try {
-      pdf = await pdfjs.getDocument({
+      loadingTask = pdfjs.getDocument({
         data: new Uint8Array(await file.arrayBuffer()),
         useSystemFonts: true,
-      }).promise;
+      });
+      const pdf = await loadingTask.promise;
 
       if (pdf.numPages > 20) {
         throw new Error("Use a receipt PDF with 20 pages or fewer.");
@@ -257,7 +258,7 @@ export async function readReceiptFile(file: File): Promise<Purchase> {
         { cause: error },
       );
     } finally {
-      await pdf?.destroy();
+      await loadingTask?.destroy();
     }
   } else if (
     ["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
