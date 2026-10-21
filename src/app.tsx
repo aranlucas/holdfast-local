@@ -615,8 +615,8 @@ export default function App() {
                             className="purchase-row"
                             key={p.id}
                             onClick={() => setSelected(p.id)}
-                            aria-label={`Open ${p.item}`}
                           >
+                            <span className="sr-only">Open </span>
                             <span className="item-cell">
                               <span className={`item-icon ${status.key}`}>
                                 <ItemIcon item={p.item} />
