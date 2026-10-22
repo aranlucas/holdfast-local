@@ -7,7 +7,6 @@
   },
   "include": [
     "server.mjs",
-    "scripts-build-sw.mjs",
     "playwright.config.ts",
     "test/e2e/**/*.e2e.ts",
     "test/**/*.mjs",

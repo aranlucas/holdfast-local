@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "husky",
     "dev": "portless run vite",
-    "build": "tsc -b && vite build && node scripts-build-sw.mjs",
+    "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4319 --strictPort",
     "start": "node server.mjs",
     "test": "pnpm run typecheck:tooling && vitest run",
@@ -45,6 +45,7 @@
     "prettier": "^3.9.10",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
+    "vite-plugin-pwa": "2.0.0",
     "vitest": "^5.0.5"
   },
   "lint-staged": {
