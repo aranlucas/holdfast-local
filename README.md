@@ -6,7 +6,7 @@ Private source repository: https://github.com/aranlucas/holdfast-local
 
 ## Run
 
-Requires Node.js 22.12+ (CI uses Node 24; also tested locally on Node 26.10) and pnpm 12.11.2. No account, credentials, AI service, database server, or environment secrets.
+Requires Node.js 22.12+ (CI uses Node 24; also tested locally on Node 26.10) and the pnpm version pinned in `package.json`. No account, credentials, AI service, database server, or environment secrets.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -52,6 +52,8 @@ pnpm run test:e2e
 pnpm run check:format
 ```
 
+Unit tests use a separate Vitest configuration so receipt/date/export logic can run without initializing the production service-worker plugin. The production build and browser tests still use `vite.config.ts` and require its PWA dependencies.
+
 Hosted CI runs formatting, unit tests, the production build, and the browser suite with one Chromium worker on pull requests and main-branch pushes. It does not deploy.
 
 Browser tests use one worker and a local production server (reuse an existing server on port 4319). To reuse an already installed Chromium, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable. Screenshots and sample exports default to `/tmp/holdfast-qa`; override with `HOLDFAST_EVIDENCE_DIR`. Tests use only synthetic data. See [QA](docs/QA.md) and [decisions](docs/DECISIONS.md).
@@ -65,4 +67,4 @@ No infrastructure has been provisioned or publicly deployed.
 
 ## Structure
 
-`model.ts` owns pure date/rule validation; `extraction.ts` owns local import; `receiptItems.ts` owns conservative per-product suggestions; `calendar.ts` owns RFC 5545 export; `storage.ts` owns IndexedDB; `exports.ts` owns escaped packet HTML, ZIP export and validated backup import. React components separate shelf, three-fact verification, detail preparation, timeline, and device controls. PDF.js loads lazily; all production assets are precached for offline first use.
+`model.ts` owns pure date/rule validation; `extraction.ts` owns local import; `receipt-items.ts` owns conservative per-product suggestions; `calendar.ts` owns RFC 5545 export; `storage.ts` owns IndexedDB; `exports.ts` owns escaped packet HTML, ZIP export and validated backup import. React components separate shelf, three-fact verification, detail preparation, timeline, and device controls. PDF.js loads lazily; all production assets are precached for offline first use.
