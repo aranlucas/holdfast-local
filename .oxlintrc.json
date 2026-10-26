@@ -37,7 +37,7 @@
   },
   "overrides": [
     {
-      "files": ["test/e2e/**/*.e2e.ts", "test/helpers/external-requests.ts"],
+      "files": ["src/storage.ts", "test/e2e/**/*.e2e.ts", "test/helpers/external-requests.ts"],
       "rules": {
         "eslint/complexity": [
           "error",
