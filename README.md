@@ -56,7 +56,9 @@ Unit tests use a separate Vitest configuration so receipt/date/export logic can 
 
 Hosted CI runs formatting, unit tests, the production build, and the browser suite with one Chromium worker on pull requests and main-branch pushes. It does not deploy.
 
-Browser tests use one worker and a local production server (reuse an existing server on port 4319). To reuse an already installed Chromium, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable. Screenshots and sample exports default to `/tmp/holdfast-qa`; override with `HOLDFAST_EVIDENCE_DIR`. Tests use only synthetic data. See [QA](docs/QA.md) and [decisions](docs/DECISIONS.md).
+Browser tests use one worker and start and stop their own local production server on port 4319. An occupied port fails explicitly so an unrelated checkout cannot supply the tested build. To reuse an already installed Chromium, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable. Screenshots and sample exports default to `/tmp/holdfast-qa`; override with `HOLDFAST_EVIDENCE_DIR`. Tests use only synthetic data. See [QA](docs/QA.md) and [decisions](docs/DECISIONS.md).
+
+The shelf flow collects requests across its browser context and compares parsed URL origins with Playwright's `baseURL`; `blob:` and `data:` fixtures remain allowed. A separate browser regression fulfills requests in memory and verifies that another page's request to a prefix-matching port is reported. Run it with `pnpm test:e2e local-requests.e2e.ts` after building. This checks the request assertion, not every possible network channel or application flow. Native Oxlint enforces classic complexity at most 9 for these browser tests and the request collector.
 
 ## Deployment compatibility
 
