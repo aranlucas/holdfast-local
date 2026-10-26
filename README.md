@@ -70,3 +70,5 @@ No infrastructure has been provisioned or publicly deployed.
 ## Structure
 
 `model.ts` owns pure date/rule validation; `extraction.ts` owns local import; `receipt-items.ts` owns conservative per-product suggestions; `calendar.ts` owns RFC 5545 export; `storage.ts` owns IndexedDB; `exports.ts` owns escaped packet HTML, ZIP export and validated backup import. React components separate shelf, three-fact verification, detail preparation, timeline, and device controls. PDF.js loads lazily; all production assets are precached for offline first use.
+
+See [module and API contracts](docs/ARCHITECTURE.md) for data flow, persistence guarantees, error handling, and current backup limits. Bulk restores commit all records together. A failed write rolls back the transaction, retains the causal error, and can be retried. Native Oxlint enforces classic complexity below 10 for storage and the browser regression tests.

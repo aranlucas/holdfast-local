@@ -1,5 +1,29 @@
 # QA evidence
 
+## Runtime audit verification — 2026-10-26
+
+At the bulk-restore fix, native checks passed on Node 26.12.1 and pnpm 12.14.0:
+60 Vitest tests, 16 Chromium scenarios, tooling and application TypeScript,
+production build, Oxlint, formatting, and Git whitespace checks. CI targets
+Node 24; its result is tracked separately on the pull request.
+
+The two new browser regressions failed against the prior runtime: a synchronous
+second-write exception committed the first update, and an asynchronous duplicate-key
+failure emitted an unhandled `AbortError`. Both now preserve the original cabinet,
+surface a handled error, and successfully retry. Tests use native IndexedDB and
+the existing production-server Playwright configuration, with no new test runner.
+
+Oxlint classic complexity in `storage.ts` remains below 10: the batch writer is 7
+and `saveMany` is 4. Added error/rollback paths increase total decision count;
+this correctness fix is not a claim of reduced whole-application complexity.
+
+Separate bounded audit probes reproduced exported backups rejected at 501 records
+and at a manifest over 5 MiB. Those findings remain open; see
+[API contracts and backup limits](ARCHITECTURE.md). Browser/operating-system coverage
+remains limited to Chromium on macOS locally and the configured CI environment.
+
+## Original product handoff — historical evidence
+
 Production app: http://127.0.0.1:4319. Chromium for Testing on macOS; desktop 1440 × 1000, mobile 390 × 844. Browser date zone UTC; extra contexts tested America/Los_Angeles and Pacific/Kiritimati. Tests use one browser worker and synthetic/user-entered test data only.
 
 The in-app browser was tried first but its tool transport became unavailable (`Transport closed`). The task explicitly requested real browser testing, so installed Playwright Chromium was used as the fallback. No gh authentication failures were repeated.
