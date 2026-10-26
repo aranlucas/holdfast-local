@@ -14,6 +14,7 @@ Before adding a script file (`scripts/`, `bin/`, `tools/`, root `*.sh|*.py|*.mjs
 Before hand-writing general-purpose code, use a well-maintained library: actively released, widely adopted, typed, and a fit for this stack. Reach for one already in the dependencies first. Write custom code for domain logic and for the glue no library covers. A PR that adds a dependency says why it was picked; a PR that hand-writes something a library covers names the library and why it didn't fit.
 
 - IndexedDB persistence → idb.
-- ZIP exports → jszip.
+- Proof packet ZIPs → jszip.
+- Backup split ZIP volumes, streaming reads, CRC and decompression size checks → @zip.js/zip.js (native core build).
 - PDF text extraction → pdfjs-dist.
 - Stored and exported data validation → zod.

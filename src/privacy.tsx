@@ -1,8 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDownToLine, FolderLock, RotateCcw, ShieldCheck, Upload } from "lucide-react";
 import type { Purchase } from "./model";
 import { downloadBlob } from "./exports";
-import { exportBackup, importBackup } from "./backup";
 import type { BackupPart } from "./backup-archive";
 import { Notice } from "./ui";
 
@@ -15,32 +14,75 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
 
   const file = useRef<HTMLInputElement>(null);
   const disabled = busy || working;
+  const operation = useRef<AbortController | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  async function backup() {
+  useEffect(() => () => operation.current?.abort(), []);
+
+  function beginOperation() {
+    operation.current?.abort();
+    const controller = new AbortController();
+    operation.current = controller;
     setWorking(true);
     setError("");
-
     setSuccess("");
+
+    return controller;
+  }
+
+  function cancelOperation() {
+    operation.current?.abort();
+    setWorking(false);
+    setSuccess("Backup operation canceled.");
+
+    if (file.current) {
+      file.current.value = "";
+    }
+  }
+
+  function finishOperation(controller: AbortController, clearInput = false) {
+    if (operation.current !== controller) {
+      return;
+    }
+
+    setSaving(false);
+
+    if (!controller.signal.aborted) {
+      setWorking(false);
+    }
+
+    if (clearInput && file.current) {
+      file.current.value = "";
+    }
+  }
+
+  async function backup() {
+    const controller = beginOperation();
     setBackupParts([]);
 
     try {
-      const parts = await exportBackup(purchases);
+      const { exportBackup } = await import("./backup");
+      controller.signal.throwIfAborted();
+      const parts = await exportBackup(purchases, { signal: controller.signal });
+      controller.signal.throwIfAborted();
 
       if (parts.length === 1) {
         downloadBlob(parts[0].blob, parts[0].name);
         setSuccess(
-          "Backup downloaded. Keep it somewhere you trust; it contains your receipt data and documents.",
+          "Backup download started. Keep it somewhere you trust; it contains your receipt data and documents.",
         );
       } else {
         setBackupParts(parts);
         setSuccess(
-          `Backup ready in ${parts.length} parts. Download every part below and keep the original filenames together.`,
+          `Backup ready in ${parts.length} files. Download every volume and the required index below. Keep their original filenames together.`,
         );
       }
     } catch {
-      setError("Could not create the backup. Your device data is unchanged. Try again.");
+      if (!controller.signal.aborted) {
+        setError("Could not create the backup. Your device data is unchanged. Try again.");
+      }
     } finally {
-      setWorking(false);
+      finishOperation(controller);
     }
   }
 
@@ -49,28 +91,31 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
       return;
     }
 
-    setWorking(true);
-    setError("");
-    setSuccess("");
+    const controller = beginOperation();
 
     try {
-      const p = await importBackup(files);
+      const { importBackup } = await import("./backup");
+      controller.signal.throwIfAborted();
+      const p = await importBackup(files, { signal: controller.signal });
+      controller.signal.throwIfAborted();
+      setSaving(true);
       await onRestore(p);
+      controller.signal.throwIfAborted();
       setSuccess(
         `Restored ${p.length} purchases. Matching IDs were updated; other purchases were kept.`,
       );
     } catch (e) {
+      if (controller.signal.aborted) {
+        return;
+      }
+
       setError(
         e instanceof Error
           ? e.message
           : "Could not restore this backup. No purchases were changed.",
       );
     } finally {
-      setWorking(false);
-
-      if (file.current) {
-        file.current.value = "";
-      }
+      finishOperation(controller, true);
     }
   }
 
@@ -132,6 +177,7 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
             {working ? "Working…" : "Download device backup"}
           </button>
           <BackupDownloads parts={backupParts} disabled={disabled} />
+          <CancelBackup working={working} saving={saving} onCancel={cancelOperation} />
           <button
             type="button"
             className="button secondary"
@@ -145,7 +191,7 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
             ref={file}
             hidden
             type="file"
-            accept=".zip"
+            disabled={disabled}
             multiple
             aria-label="Backup file"
             onChange={(e) => void restore(Array.from(e.target.files ?? []))}
@@ -206,6 +252,20 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
   );
 }
 
+type CancelBackupProps = { working: boolean; saving: boolean; onCancel: () => void };
+
+function CancelBackup({ working, saving, onCancel }: CancelBackupProps) {
+  if (!working) {
+    return null;
+  }
+
+  return (
+    <button type="button" className="text-button" disabled={saving} onClick={onCancel}>
+      {saving ? "Saving validated backup…" : "Cancel backup operation"}
+    </button>
+  );
+}
+
 type BackupDownloadsProps = { parts: BackupPart[]; disabled: boolean };
 
 function BackupDownloads({ parts, disabled }: BackupDownloadsProps) {
@@ -223,7 +283,7 @@ function BackupDownloads({ parts, disabled }: BackupDownloadsProps) {
             disabled={disabled}
             onClick={() => downloadBlob(part.blob, part.name)}
           >
-            Download backup part {index + 1} of {parts.length}
+            Download file {index + 1} of {parts.length}: {part.name}
           </button>
         </li>
       ))}

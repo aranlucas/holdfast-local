@@ -112,18 +112,21 @@ export const validateBackupRecord = backupRecord.parse.bind(backupRecord);
 
 export const legacyBackupManifest = z.object({
   schemaVersion: z.literal(1),
-  purchases: z.array(backupRecord).max(500),
+  purchases: z.array(backupRecord),
 });
 
 export const backupManifest = z.object({
   schemaVersion: z.literal(2),
   backupId: z.uuid(),
-  metadataChunks: z.number().int().positive().safe(),
-  metadataBytes: z.number().int().positive().safe(),
+  exportedAt: z.iso.datetime(),
   purchaseCount: z.number().int().nonnegative().safe(),
 });
 
-export const backupRecords = z.array(backupRecord);
+export const recordManifest = z.object({
+  id: backupId,
+  metadataChunks: z.number().int().positive().safe(),
+  metadataBytes: z.number().int().positive().safe(),
+});
 
 export type BackupRecord = z.infer<typeof backupRecord>;
 

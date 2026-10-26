@@ -1,21 +1,31 @@
-import { BlobReader, BlobWriter, SplitDataWriter, ZipReader, ZipWriter } from "@zip.js/zip.js";
-import type { Entry, FileEntry } from "@zip.js/zip.js";
+import {
+  BlobReader,
+  BlobWriter,
+  SplitDataWriter,
+  ZipReader,
+  ZipWriter,
+} from "@zip.js/zip.js/lib/zip-core-native.js";
+import type { Entry, FileEntry } from "@zip.js/zip.js/lib/zip-core-native.js";
 
 export const BACKUP_PART_BYTES = 60 * 1024 * 1024;
 
 export const BACKUP_PAYLOAD_BYTES = 48 * 1024 * 1024;
 
-export const BACKUP_PART_ENTRIES = 500;
+export const BACKUP_PART_ENTRIES = 4096;
 
-export const BACKUP_METADATA_BYTES = 5 * 1024 * 1024;
+export const BACKUP_METADATA_BYTES = 1024 * 1024;
+
+export const BACKUP_DESCRIPTOR_BYTES = 4096;
+
+export const LEGACY_METADATA_BYTES = 5 * 1024 * 1024;
 
 export const BACKUP_EVIDENCE_BYTES = 12 * 1024 * 1024;
 
 export type BackupPart = { name: string; blob: Blob };
 
-type BackupEntry = { name: string; blob: Blob };
+export type BackupOptions = { signal?: AbortSignal };
 
-type BackupSelection = { files: File[]; backupId?: string };
+type BackupEntry = { name: string; blob: Blob };
 
 // oxlint-disable-next-line typescript/require-await -- The native SplitDataWriter requires an async generator of disk writers.
 async function* diskWriters(disks: BlobWriter[]): AsyncGenerator<BlobWriter, boolean> {
@@ -28,78 +38,53 @@ async function* diskWriters(disks: BlobWriter[]): AsyncGenerator<BlobWriter, boo
 
 /** Native split ZIP volumes; cap both compressed bytes and declared payload per volume. */
 export async function writeBackupArchive(
-  backupId: string,
   entries: Iterable<BackupEntry>,
-): Promise<BackupPart[]> {
+  options: BackupOptions,
+): Promise<Blob[]> {
   const disks: BlobWriter[] = [];
   const split = new SplitDataWriter(diskWriters(disks), BACKUP_PART_BYTES);
   const writer = new ZipWriter(split, { useWebWorkers: false, level: 6 });
   let bytes = 0;
   let count = 0;
 
-  for (const entry of entries) {
-    if (bytes + entry.blob.size > BACKUP_PAYLOAD_BYTES || count === BACKUP_PART_ENTRIES) {
-      // oxlint-disable-next-line eslint/no-await-in-loop -- Finish the previous volume before adding the next entry.
-      await split.closeDisk();
-      bytes = 0;
-      count = 0;
+  try {
+    for (const entry of entries) {
+      options.signal?.throwIfAborted();
+
+      if (bytes + entry.blob.size > BACKUP_PAYLOAD_BYTES || count === BACKUP_PART_ENTRIES) {
+        // oxlint-disable-next-line eslint/no-await-in-loop -- Finish this volume before starting the next entry.
+        await split.closeDisk();
+        bytes = 0;
+        count = 0;
+      }
+
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Native ZIP writes share an ordered archive and volume budget.
+      await writer.add(entry.name, new BlobReader(entry.blob), options);
+      bytes += entry.blob.size;
+      count++;
+    }
+  } catch (error) {
+    try {
+      await writer.close();
+    } catch (closeError) {
+      // oxlint-disable-next-line eslint/preserve-caught-error -- Preserve both failures while retaining the original write error as the cause.
+      throw new AggregateError([error, closeError], "Backup creation failed.", { cause: error });
     }
 
-    // oxlint-disable-next-line eslint/no-await-in-loop -- Native ZIP writes share one ordered archive and volume budget.
-    await writer.add(entry.name, new BlobReader(entry.blob));
-    bytes += entry.blob.size;
-    count++;
+    throw error;
   }
 
   await writer.close();
-  const blobs = await Promise.all(disks.map((disk) => disk.getData()));
+  options.signal?.throwIfAborted();
 
-  return blobs.map((blob, index) => ({
-    name: `Holdfast-${backupId}-part-${index + 1}-of-${blobs.length}.zip`,
-    blob,
-  }));
+  return Promise.all(disks.map((disk) => disk.getData()));
 }
 
-const partName = /^Holdfast-([a-f\d-]{36})-part-(\d+)-of-(\d+)\.zip$/;
-
-/** Selection order is irrelevant; filenames identify the complete native volume set. */
-export function orderedBackupFiles(files: File[]): BackupSelection {
-  if (!files.length) {
-    throw new Error("Choose a Holdfast backup, including every part of a multipart backup.");
-  }
-
-  if (files.some((file) => file.size > BACKUP_PART_BYTES)) {
-    throw new Error("A backup file is larger than 60 MB.");
-  }
-
-  if (files.length === 1) {
-    return { files };
-  }
-
-  const parts = files.map((file) => {
-    const match = partName.exec(file.name);
-
-    if (!match || Number(match[3]) !== files.length) {
-      throw new Error("Select every backup part with its original filename.");
-    }
-
-    return { file, backupId: match[1], index: Number(match[2]) };
-  });
-
-  parts.sort((a, b) => a.index - b.index);
-  const backupId = parts[0].backupId;
-
-  if (parts.some((part, index) => part.backupId !== backupId || part.index !== index + 1)) {
-    throw new Error("Backup parts are missing, duplicated, or from different backups.");
-  }
-
-  return { files: parts.map((part) => part.file), backupId };
-}
-
-export function backupArchiveReader(files: File[]) {
+export function backupArchiveReader(files: File[], options: BackupOptions) {
   return new ZipReader(
     files.map((file) => new BlobReader(file)),
     {
+      ...options,
       useWebWorkers: false,
       strictness: "strict",
       checkCrc32: true,
@@ -115,7 +100,7 @@ export function validateBackupVolumes(entries: Entry[], partCount: number): void
   for (const entry of entries) {
     const total = totals[entry.diskNumberStart];
 
-    if (!total || entry.directory || entry.encrypted) {
+    if (!total || entry.directory || entry.encrypted || entry.symlink) {
       throw new Error("Backup contains an unsupported entry.");
     }
 
@@ -131,7 +116,7 @@ export function validateBackupVolumes(entries: Entry[], partCount: number): void
 export function backupFile(entries: Map<string, Entry>, name: string): FileEntry {
   const entry = entries.get(name);
 
-  if (!entry || entry.directory || entry.encrypted) {
+  if (!entry || entry.directory || entry.encrypted || entry.symlink) {
     throw new Error(`Missing or unsupported backup entry: ${name}`);
   }
 

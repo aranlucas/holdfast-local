@@ -45,7 +45,9 @@
         "src/backup-archive.ts",
         "src/backup-schema.ts",
         "src/privacy.tsx",
-        "test/backup.test.ts"
+        "test/backup.test.ts",
+        "src/backup-set.ts",
+        "test/backup-security.test.ts"
       ],
       "rules": {
         "eslint/complexity": [
