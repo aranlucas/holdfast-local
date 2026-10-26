@@ -1,4 +1,5 @@
 import { required } from "@test/helpers/required";
+import { collectExternalRequests } from "@test/helpers/external-requests";
 import { z } from "zod";
 import { validateBackupRecord } from "@/exports";
 
@@ -80,22 +81,17 @@ function makePDF() {
   return Buffer.from(data);
 }
 
-test("desktop shelf, filters, timeline, packet and original data stay local", async ({ page }) => {
+test("desktop shelf, filters, timeline, packet and original data stay local", async ({
+  page,
+  context,
+  baseURL,
+}) => {
   await mkdir(evidence, { recursive: true });
 
   const errors: string[] = [];
-  const external: string[] = [];
+  const external = collectExternalRequests(context, baseURL);
 
   page.on("pageerror", (e) => errors.push(e.message));
-  page.on("request", (r) => {
-    if (
-      !r.url().startsWith("http://127.0.0.1:4319") &&
-      !r.url().startsWith("blob:") &&
-      !r.url().startsWith("data:")
-    ) {
-      external.push(r.url());
-    }
-  });
   await open(page);
   await expect(page).toHaveTitle("Holdfast · Receipts, ready");
   await page.screenshot({

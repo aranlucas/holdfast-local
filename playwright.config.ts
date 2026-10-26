@@ -23,7 +23,7 @@ export default defineConfig({
   webServer: {
     command: "pnpm start",
     url: "http://127.0.0.1:4319",
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 15000,
   },
 });
