@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { exportBackup } from "@/exports";
+import { exportBackup } from "@/backup";
 import { blankPurchase } from "@/model";
 import type { Purchase } from "@/model";
 
 async function restore(page: Page, purchases: Purchase[]) {
-  const archive = await exportBackup(purchases);
+  const [{ blob: archive }] = await exportBackup(purchases);
   await page.getByLabel("Backup file", { exact: true }).setInputFiles({
     name: "transaction-test.zip",
     mimeType: "application/zip",

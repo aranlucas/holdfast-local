@@ -19,6 +19,7 @@
     "typecheck:tooling": "tsc --noEmit -p tsconfig.tooling.json"
   },
   "dependencies": {
+    "@zip.js/zip.js": "2.24.0",
     "idb": "^8.0.4",
     "jszip": "^3.10.2",
     "lucide-react": "^1.61.0",

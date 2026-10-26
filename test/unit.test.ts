@@ -14,16 +14,10 @@ import {
 } from "@/model";
 import { extractReceipt, readReceiptFile } from "@/extraction";
 import { demoPurchases, samplePolicy, sampleText } from "@/samples";
-import {
-  escapeHTML,
-  exportBackup,
-  exportPacket,
-  importBackup,
-  packetHTML,
-  safeName,
-  validateBackupRecord,
-} from "@/exports";
+import { escapeHTML, exportPacket, packetHTML, safeName } from "@/exports";
 import JSZip from "jszip";
+import { exportBackup, importBackup } from "@/backup";
+import { validateBackupRecord } from "@/backup-schema";
 
 function fixture() {
   const p = extractReceipt(sampleText("2026-10-02"));
@@ -250,8 +244,8 @@ describe("portable, safe proof and backup exports", () => {
         blob: new Blob(["abc"]),
       },
     ];
-    const blob = await exportBackup([p]);
-    const imported = await importBackup(new File([blob], "backup.zip"));
+    const [{ blob }] = await exportBackup([p]);
+    const imported = await importBackup([new File([blob], "backup.zip")]);
     expect(imported[0].id).toBe(p.id);
     expect(imported[0].checklist.receipt).toBe(true);
     expect(await imported[0].attachments[0].blob.text()).toBe("abc");
@@ -264,7 +258,7 @@ describe("portable, safe proof and backup exports", () => {
   });
   it("rejects a proof packet used as a backup", async () => {
     const packet = await exportPacket(fixture());
-    await expect(importBackup(new File([packet], "proof.zip"))).rejects.toThrow(
+    await expect(importBackup([new File([packet], "proof.zip")])).rejects.toThrow(
       "not a Holdfast backup",
     );
   });
@@ -279,11 +273,11 @@ describe("portable, safe proof and backup exports", () => {
         blob: new Blob(["abc"]),
       },
     ];
-    const blob = await exportBackup([p]);
+    const [{ blob }] = await exportBackup([p]);
     const zip = await JSZip.loadAsync(await blob.arrayBuffer());
     zip.remove(`evidence/${p.id}/file-1`);
     const damaged = await zip.generateAsync({ type: "blob" });
-    await expect(importBackup(new File([damaged], "damaged.zip"))).rejects.toThrow(
+    await expect(importBackup([new File([damaged], "damaged.zip")])).rejects.toThrow(
       "Missing evidence",
     );
   });

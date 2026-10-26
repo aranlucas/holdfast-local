@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
 import { ArrowDownToLine, FolderLock, RotateCcw, ShieldCheck, Upload } from "lucide-react";
 import type { Purchase } from "./model";
-import { downloadBlob, exportBackup, importBackup } from "./exports";
+import { downloadBlob } from "./exports";
+import { exportBackup, importBackup } from "./backup";
+import type { BackupPart } from "./backup-archive";
 import { Notice } from "./ui";
 
 export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
@@ -9,18 +11,32 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
   const [working, setWorking] = useState(false);
   const [clear, setClear] = useState(false);
   const [success, setSuccess] = useState("");
+  const [backupParts, setBackupParts] = useState<BackupPart[]>([]);
 
   const file = useRef<HTMLInputElement>(null);
+  const disabled = busy || working;
 
   async function backup() {
     setWorking(true);
     setError("");
 
+    setSuccess("");
+    setBackupParts([]);
+
     try {
-      downloadBlob(await exportBackup(purchases), "Holdfast-device-backup.zip");
-      setSuccess(
-        "Backup downloaded. Keep it somewhere you trust; it contains your receipt data and documents.",
-      );
+      const parts = await exportBackup(purchases);
+
+      if (parts.length === 1) {
+        downloadBlob(parts[0].blob, parts[0].name);
+        setSuccess(
+          "Backup downloaded. Keep it somewhere you trust; it contains your receipt data and documents.",
+        );
+      } else {
+        setBackupParts(parts);
+        setSuccess(
+          `Backup ready in ${parts.length} parts. Download every part below and keep the original filenames together.`,
+        );
+      }
     } catch {
       setError("Could not create the backup. Your device data is unchanged. Try again.");
     } finally {
@@ -28,8 +44,8 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
     }
   }
 
-  async function restore(f?: File) {
-    if (!f) {
+  async function restore(files: File[]) {
+    if (!files.length) {
       return;
     }
 
@@ -38,7 +54,7 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
     setSuccess("");
 
     try {
-      const p = await importBackup(f);
+      const p = await importBackup(files);
       await onRestore(p);
       setSuccess(
         `Restored ${p.length} purchases. Matching IDs were updated; other purchases were kept.`,
@@ -103,22 +119,23 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
         <section className="backup-panel">
           <h2>Take the cabinet with you.</h2>
           <p>
-            Back up every purchase and original document. Restore your exported ZIP on another
-            device or browser.
+            Back up every purchase and original document. Large backups have several ZIP parts. Keep
+            every part and select them together when restoring on another device or browser.
           </p>
           <button
             type="button"
             className="button primary"
-            disabled={busy || working}
+            disabled={disabled}
             onClick={() => void backup()}
           >
             <ArrowDownToLine size={17} />
             {working ? "Working…" : "Download device backup"}
           </button>
+          <BackupDownloads parts={backupParts} disabled={disabled} />
           <button
             type="button"
             className="button secondary"
-            disabled={busy || working}
+            disabled={disabled}
             onClick={() => file.current?.click()}
           >
             <Upload size={17} />
@@ -129,8 +146,9 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
             hidden
             type="file"
             accept=".zip"
+            multiple
             aria-label="Backup file"
-            onChange={(e) => void restore(e.target.files?.[0])}
+            onChange={(e) => void restore(Array.from(e.target.files ?? []))}
           />
           <p className="footnote">
             Restore validates the full backup before saving. Purchases with matching IDs are
@@ -151,7 +169,7 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
               <button
                 type="button"
                 className="button danger"
-                disabled={busy || working}
+                disabled={disabled}
                 onClick={() => {
                   setError("");
                   void onClear()
@@ -175,7 +193,7 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
             <button
               type="button"
               className="text-button danger-text"
-              disabled={busy || working || !purchases.length}
+              disabled={disabled || !purchases.length}
               onClick={() => setClear(true)}
             >
               <RotateCcw size={16} />
@@ -185,6 +203,31 @@ export function Privacy({ purchases, onRestore, onClear, busy }: PrivacyProps) {
         </section>
       </div>
     </>
+  );
+}
+
+type BackupDownloadsProps = { parts: BackupPart[]; disabled: boolean };
+
+function BackupDownloads({ parts, disabled }: BackupDownloadsProps) {
+  if (!parts.length) {
+    return null;
+  }
+
+  return (
+    <ol aria-label="Backup parts">
+      {parts.map((part, index) => (
+        <li key={part.name}>
+          <button
+            type="button"
+            className="text-button"
+            disabled={disabled}
+            onClick={() => downloadBlob(part.blob, part.name)}
+          >
+            Download backup part {index + 1} of {parts.length}
+          </button>
+        </li>
+      ))}
+    </ol>
   );
 }
 
