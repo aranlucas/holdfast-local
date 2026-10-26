@@ -23,7 +23,7 @@ The portable built-app ZIP includes `dist/` and `server.mjs`; unzip and run `nod
 1. Click **Try a sample shelf** for four explicitly fictional purchases, or **Add receipt → Try a receipt with two items** to try a receipt basket.
 2. Select the receipt products you want to track. Verify the purchase, calendar date, and item-specific policy for each. Inspect **Source evidence** for the matched receipt line and qualitative confidence.
 3. Open a purchase, prepare its checklist, and **Export proof packet**. The ZIP contains an offline printable HTML summary, original files, receipt text, policy text, structured data, and a Markdown checklist.
-4. **My device** exports/restores a complete backup. **Timeline** shows recorded dates and unknowns, and exports the visible dates as a one-time `.ics` calendar file. Each purchase can also export its own dates.
+4. **My device** exports/restores a complete backup. Large backups contain numbered ZIP volumes and a required index; download every file and select them together to restore. **Timeline** shows recorded dates and unknowns, and exports the visible dates as a one-time `.ics` calendar file. Each purchase can also export its own dates.
 
 ## Input and rules
 
@@ -69,6 +69,6 @@ No infrastructure has been provisioned or publicly deployed.
 
 ## Structure
 
-`model.ts` owns pure date/rule validation; `extraction.ts` owns local import; `receipt-items.ts` owns conservative per-product suggestions; `calendar.ts` owns RFC 5545 export; `storage.ts` owns IndexedDB; `exports.ts` owns escaped packet HTML, ZIP export and validated backup import. React components separate shelf, three-fact verification, detail preparation, timeline, and device controls. PDF.js loads lazily; all production assets are precached for offline first use.
+`model.ts` owns pure date/rule validation; `extraction.ts` owns local import; `receipt-items.ts` owns conservative per-product suggestions; `calendar.ts` owns RFC 5545 export; `storage.ts` owns IndexedDB; `exports.ts` owns escaped proof packets; `backup.ts` coordinates validated backup sets through native zip.js volumes, per-record metadata chunks and a hashed set index. React components separate shelf, three-fact verification, detail preparation, timeline, and device controls. PDF.js and backup archive code load lazily; all production assets are precached for offline first use.
 
-See [module and API contracts](docs/ARCHITECTURE.md) for data flow, persistence guarantees, error handling, and current backup limits. Bulk restores commit all records together. A failed write rolls back the transaction, retains the causal error, and can be retried. Native Oxlint enforces classic complexity below 10 for storage and the browser regression tests.
+See [module and API contracts](docs/ARCHITECTURE.md) for data flow, persistence guarantees, error handling, and [backup compatibility and format](docs/BACKUPS.md). Bulk restores commit all records together. A failed write rolls back the transaction, retains the causal error, and can be retried. Native Oxlint enforces classic complexity below 10 for storage, backup modules, device controls and the browser regression tests.

@@ -1,14 +1,7 @@
-import { z } from "zod";
-import {
-  CHECKLIST,
-  formatDate,
-  money,
-  returnDeadline,
-  warrantyDeadline,
-  validatePurchase,
-} from "./model";
-import type { Purchase, Attachment } from "./model";
+import { CHECKLIST, formatDate, money, returnDeadline, warrantyDeadline } from "./model";
+import type { Purchase } from "./model";
 import JSZip from "jszip";
+import { purchaseMetadata } from "./backup-schema";
 
 export function safeName(name: string): string {
   return (
@@ -29,13 +22,6 @@ const htmlEntities = new Map([
 
 export function escapeHTML(value: string): string {
   return value.replaceAll(/[&<>"']/g, (c) => htmlEntities.get(c) ?? c);
-}
-
-function serializable(p: Purchase) {
-  return {
-    ...p,
-    attachments: p.attachments.map(({ id, name, type, size }) => ({ id, name, type, size })),
-  };
 }
 
 export function packetHTML(p: Purchase): string {
@@ -79,7 +65,7 @@ export function downloadBlob(blob: Blob, name: string): void {
 export async function exportPacket(p: Purchase): Promise<Blob> {
   const zip = new JSZip();
   zip.file("proof-packet.html", packetHTML(p));
-  zip.file("purchase.json", JSON.stringify(serializable(p), null, 2));
+  zip.file("purchase.json", JSON.stringify(purchaseMetadata(p), null, 2));
   zip.file("receipt.txt", p.receiptText || "No text extracted. Original attachment retained.");
   zip.file(
     "policy.txt",
@@ -96,198 +82,4 @@ export async function exportPacket(p: Purchase): Promise<Blob> {
   }
 
   return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-}
-
-export async function exportBackup(purchases: Purchase[]): Promise<Blob> {
-  const zip = new JSZip();
-  zip.file(
-    "holdfast.json",
-    JSON.stringify(
-      {
-        schemaVersion: 1,
-        exportedAt: new Date().toISOString(),
-        purchases: purchases.map(serializable),
-      },
-      null,
-      2,
-    ),
-  );
-
-  for (const p of purchases) {
-    for (const a of p.attachments) {
-      // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence reads sequential and preserve archive insertion, validation and fail-fast order.
-      zip.file(`evidence/${p.id}/${a.id}`, await a.blob.arrayBuffer());
-    }
-  }
-
-  return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-}
-
-const backupText = z.string().max(100000);
-
-const backupId = z.string().regex(/^[a-zA-Z0-9-]{1,80}$/);
-
-const evidence = z
-  .object({
-    confidence: z.enum(["high", "medium", "unknown", "confirmed"]),
-    excerpt: backupText,
-    note: backupText,
-    line: z.number().int().min(1).optional(),
-  })
-  .passthrough();
-
-const backupRecord = z
-  .object({
-    id: backupId,
-    merchant: backupText,
-    item: backupText,
-    amount: backupText,
-    currency: backupText,
-    purchaseDate: backupText,
-    arrivalDate: backupText,
-    orderNumber: backupText,
-    serialNumber: backupText,
-    receiptText: backupText,
-    sourceLabel: backupText,
-    notes: backupText,
-    createdAt: backupText,
-    updatedAt: backupText,
-    confirmedAt: backupText,
-    outcome: z.enum(["active", "returned", "kept"]),
-    synthetic: z.boolean(),
-    policy: z
-      .object({
-        returnMode: z.enum(["unknown", "days", "date", "none"]),
-        warrantyMode: z.enum(["unknown", "months", "date", "none"]),
-        startOn: z.enum(["purchase", "arrival"]),
-        warrantyStartOn: z.enum(["purchase", "arrival"]),
-        countStart: z.boolean(),
-        returnDays: z.number(),
-        warrantyMonths: z.number(),
-        returnDate: backupText,
-        warrantyDate: backupText,
-        sourceLabel: backupText,
-        text: backupText,
-        appliesTo: backupText,
-        notes: backupText,
-      })
-      .passthrough(),
-    evidence: z
-      .object({
-        merchant: evidence,
-        item: evidence,
-        amount: evidence,
-        purchaseDate: evidence,
-      })
-      .passthrough(),
-    checklist: z.record(
-      z.string().refine((key) => CHECKLIST.some((item) => item.id === key)),
-      z.boolean(),
-    ),
-    attachments: z
-      .array(
-        z
-          .object({
-            id: backupId,
-            name: z.string().max(200),
-            type: z.string().max(100),
-            size: z
-              .number()
-              .int()
-              .min(0)
-              .max(12 * 1024 * 1024),
-          })
-          .passthrough(),
-      )
-      .max(10),
-  })
-  .passthrough()
-  .superRefine((record, context) => {
-    if (new Set(record.attachments.map((item) => item.id)).size !== record.attachments.length) {
-      context.addIssue({
-        code: "custom",
-        message: "Duplicate attachment IDs in backup.",
-      });
-    }
-
-    // Purchase validation uses purchase facts and policy; blobs are reconstructed from the ZIP only after metadata validation.
-    const errors = validatePurchase({ ...record, attachments: [] });
-
-    if (errors.length) {
-      context.addIssue({
-        code: "custom",
-        message: `Backup purchase is invalid: ${errors[0]}`,
-      });
-    }
-  });
-
-// Zod owns the untrusted-input boundary and preserves the precise parsed return contract.
-export const validateBackupRecord = backupRecord.parse.bind(backupRecord);
-
-const backupManifest = z.object({
-  schemaVersion: z.literal(1),
-  purchases: z.array(backupRecord).max(500),
-});
-
-const zipMetadata = z
-  .object({
-    _data: z.object({ uncompressedSize: z.number().int().nonnegative() }),
-  })
-  .transform(({ _data: data }) => data.uncompressedSize);
-
-export async function importBackup(file: File): Promise<Purchase[]> {
-  if (file.size > 60 * 1024 * 1024) {
-    throw new Error("Backup is larger than 60 MB.");
-  }
-
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
-  const manifest = zip.file("holdfast.json");
-
-  if (!manifest) {
-    throw new Error("This is not a Holdfast backup ZIP.");
-  }
-
-  const manifestSize = zipMetadata.parse(manifest);
-
-  if (manifestSize > 5 * 1024 * 1024) {
-    throw new Error("Backup manifest is too large.");
-  }
-
-  const data = backupManifest.parse(JSON.parse(await manifest.async("string")));
-  const records = data.purchases;
-
-  if (new Set(records.map((p) => p.id)).size !== records.length) {
-    throw new Error("Duplicate purchase IDs in backup.");
-  }
-
-  let total = 0;
-  const result: Purchase[] = [];
-
-  for (const p of records) {
-    const attachments: Attachment[] = [];
-
-    for (const a of p.attachments) {
-      const entry = zip.file(`evidence/${p.id}/${a.id}`);
-
-      if (!entry) {
-        throw new Error(`Missing evidence: ${a.name}`);
-      }
-
-      const size = zipMetadata.parse(entry);
-
-      total += size;
-
-      if (size !== a.size || size > 12 * 1024 * 1024 || total > 60 * 1024 * 1024) {
-        throw new Error("Backup evidence size is invalid or too large.");
-      }
-
-      // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence reads sequential and preserve archive insertion, validation and fail-fast order.
-      const buffer = await entry.async("arraybuffer");
-      attachments.push({ ...a, blob: new Blob([buffer], { type: a.type }) });
-    }
-
-    result.push({ ...p, attachments });
-  }
-
-  return result;
 }

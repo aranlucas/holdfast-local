@@ -1,7 +1,6 @@
 import { required } from "@test/helpers/required";
 import { collectExternalRequests } from "@test/helpers/external-requests";
-import { z } from "zod";
-import { validateBackupRecord } from "@/exports";
+import { importBackup } from "@/backup";
 
 declare global {
   interface Window {
@@ -605,19 +604,8 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
   await page.getByRole("button", { name: "Download device backup" }).click();
   const archive = await backup;
 
-  const zip = await JSZip.loadAsync(
-    await readFile(required(await archive.path(), "Expected fixture API result")),
-  );
-
-  const data = z
-    .object({ purchases: z.array(z.unknown()) })
-    .parse(
-      JSON.parse(
-        await required(zip.file("holdfast.json"), "Expected fixture API result").async("string"),
-      ),
-    );
-
-  const purchases = data.purchases.map((record) => validateBackupRecord(record));
+  const bytes = await readFile(required(await archive.path(), "Expected fixture API result"));
+  const purchases = await importBackup([new File([bytes], archive.suggestedFilename())]);
   expect(purchases).toHaveLength(2);
 
   const lamp = purchases.find((p) => p.item === "Bedside lamp");
@@ -630,12 +618,7 @@ test("multi-item receipt keeps distinct rules, line amounts, source bytes and ca
 
   /* oxlint-disable no-await-in-loop -- Inspect archived receipt bytes sequentially to keep only one evidence buffer active. */
   for (const p of purchases) {
-    expect(
-      await required(
-        zip.file(`evidence/${p.id}/${p.attachments[0].id}`),
-        "Expected fixture API result",
-      ).async("string"),
-    ).toBe(receipt);
+    expect(await p.attachments[0].blob.text()).toBe(receipt);
   }
   /* oxlint-enable no-await-in-loop */
 

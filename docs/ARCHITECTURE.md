@@ -65,22 +65,27 @@ unchanged durable data, and successful retries against real IndexedDB.
 | `safeName`, `escapeHTML`                         | Sanitize download/member names and escape generated HTML values. Neither is a general-purpose URL or authorization validator.                                                                               |
 | `packetHTML(purchase)`                           | Offline printable proof; user-controlled values are escaped.                                                                                                                                                |
 | `exportPacket(purchase)`                         | ZIP containing HTML, structured facts, receipt/policy/checklist text, and original evidence bytes.                                                                                                          |
-| `exportBackup(purchases)`                        | Version-1 JSON manifest plus evidence keyed by purchase and attachment IDs. Resolves to a ZIP Blob.                                                                                                         |
+| `exportBackup(purchases, options?)`              | Version-2 native ZIP volume set; resolves to named Blobs, including a required external index for multipart backups.                                                                                        |
 | `validateBackupRecord(value)`                    | Zod boundary for one manifest record; throws for invalid structure, duplicate attachment IDs, or invalid purchase facts.                                                                                    |
-| `importBackup(file)`                             | Validate ZIP manifest, unique IDs, evidence presence/advertised sizes, then reconstruct Blobs. It does not save anything.                                                                                   |
+| `importBackup(files, options?)`                  | Validate complete membership, hashes, metadata, sizes, CRC and original bytes before returning all records. It does not save anything.                                                                      |
 | `downloadBlob(blob, name)`                       | Trigger a local download; remove the anchor and revoke its object URL after ten seconds.                                                                                                                    |
 | `calendarEvents`, `calendarText`, `calendarBlob` | Confirmed, known dates as all-day RFC 5545 events, filtered by kind. Text escaping and UTF-8 line folding prevent field injection. Unknown/no-window rules and private receipt/document fields are omitted. |
 
-**Current backup limitation:** imports accept at most 500 purchases, a 5 MiB
-manifest, a 60 MiB compressed archive, and 60 MiB of total referenced evidence
-(12 MiB per attachment, ten attachments per purchase). Export does not yet enforce
-or partition these aggregate limits. A successful download from a large cabinet
-can therefore fail to restore. Keep existing data until a restore has been
-verified; multipart backup/restore is an open implementation item.
+`backup.ts` owns record identity, metadata chunking and reconstruction. `backup-schema.ts`
+owns the Zod record and descriptor contracts shared with proof packets.
+`backup-archive.ts` delegates splitting, compression, ZIP parsing, CRC, overlap and
+actual output-size enforcement to pinned zip.js 2.24.0. `backup-set.ts` binds a
+multipart selection to an external ordered SHA-256 index using native Web Crypto.
+`Privacy` owns the cancellable operation and explicit per-file download controls.
+The library is loaded on demand and precached for offline operation.
 
-ZIP size checks currently inspect JSZip's advertised uncompressed metadata.
-They do not constitute a measured limit on actual decompression memory. Streamed
-byte limits and hostile compressed-archive fixtures remain a security follow-up.
+New backups have no cabinet-wide record/metadata/evidence cap. Per-volume and
+per-entry limits remain; the complete cabinet and staged Blobs still occupy memory.
+Legacy v1 backups remain readable within their 5 MiB manifest and 60 MiB archive /
+evidence limits, now with actual output/CRC checks. The old 500-record limit is
+removed. This does not recover every historical oversized v1 export. See
+[backup contracts and compatibility](BACKUPS.md) for format, limits, ownership,
+examples and regression coverage.
 
 ## UI, server, and errors
 
@@ -105,10 +110,11 @@ codes: the verifier currently classifies English error messages to choose a step
 
 ## Refactoring and test priorities
 
-1. Make backup export/restore limits symmetric, including large cabinets and
-   duplicated evidence across item drafts; preserve existing version-1 imports.
-2. Bound actual ZIP output and receipt parsing work. Reject or cancel excess work
-   before accumulating it; retain original-document and malformed-input tests.
+1. Design recovery for historical v1 exports exceeding the retained byte budgets;
+   do not imply that v2 chunking retroactively repairs that single-JSON format.
+2. Bound receipt parsing and PDF extraction work; add cancellation and retain
+   original-document and malformed-input tests. Backup extraction now relies on
+   tested native output-size and CRC enforcement.
 3. Extract typed fact/date/policy validation groups from `validatePurchase`, keeping
    error order and messages until the verifier uses structured issues. Separate
    shelf selectors and persistence/queue orchestration from `App`.
@@ -119,6 +125,6 @@ codes: the verifier currently classifies English error messages to choose a step
 Use existing Vitest and Playwright files, native TypeScript/Oxlint commands, and
 declarative configuration. Do not add a separate audit runner. Measure classic
 complexity per function; helper extraction reduces local paths without necessarily
-removing decisions. Storage and browser tests have a native maximum of 9. The
+removing decisions. Storage, backup modules, device controls and browser tests have a native maximum of 9. The
 larger application hotspots still require follow-up; this gate does not imply
 that the entire runtime is below 10.
