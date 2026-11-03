@@ -81,7 +81,7 @@ and some historical exports blocked only by the record/name limits, now restore.
 An old v1 export exceeding its retained byte budgets still needs a separate
 recovery design; new v2 backups do not retroactively change its format.
 
-## Native tooling and regression coverage
+## Archive implementation rationale
 
 Pinned [zip.js 2.24.0](https://github.com/gildas-lormeau/zip.js/releases/tag/v2.24.0)
 owns split ZIPs, seekable Blob reads, ZIP64, streaming decompression, CRC and overlap
@@ -89,31 +89,11 @@ checks. Its [native core build](https://github.com/gildas-lormeau/zip.js/blob/v2
 avoids a WASM/worker deployment path in this integration. Web workers are disabled;
 offline/browser behavior is tested. JSZip stays responsible for proof packets.
 Its [documented lack of multivolume support](https://stuk.github.io/jszip/documentation/limitations.html)
-and pause behavior do not meet this backup boundary. No archive parser, splitter,
-compressor, checksum implementation, validation script or test runner was added.
+and pause behavior do not meet this backup boundary.
 
-Normal Vitest tests cover 501-record cabinets, metadata beyond 5 MiB, UTF-8 chunk
-boundaries, one purchase with 120 MiB of originals, genuine v1 archives, exact
-attachment bytes, complete-set membership, checksum failures, forged sizes,
-CRC corruption, export failure, cancellation and retry. Native output-size tests
-assert that a forged entry cannot deliver bytes beyond its advertised budget to
-the consumer; metadata caps bound that advertised budget before product reads.
-
-Playwright exercises offline multipart downloads and restore, unchanged durable
-data after an incomplete selection, cancellation followed by a newer restore,
-unmount cancellation, and the existing real-IndexedDB rollback regressions.
-Chromium is the exercised browser; Safari/Firefox and peak-memory profiling remain
-unverified. Run the normal project commands:
-
-```sh
-pnpm test
-pnpm lint
-pnpm check:format
-pnpm build
-pnpm test:e2e
-```
-
-The declarative Oxlint classic-complexity maximum is 9 for backup modules, device
-controls and their regression tests. This bounds local function complexity; the
-new validation/cancellation paths add behavior and do not imply a reduction in
-the whole application's decision count.
+[Backup round-trip tests](../test/backup.test.ts) and
+[security regressions](../test/backup-security.test.ts) cover size limits,
+complete-set membership, original bytes, CRC, cancellation and retry.
+[Browser tests](../test/e2e/backup.e2e.ts) cover offline multipart transfer and
+cancellation before persistence. Use the [project verification commands](../README.md#verification).
+Safari/Firefox and peak-memory profiling remain unverified.

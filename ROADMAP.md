@@ -4,17 +4,11 @@ Updated 2026-10-26. Proposed product work, in priority order; this document does
 not mean a feature is implemented. Digits and MCP products take portfolio
 priority. Adoption and willingness to pay have not been measured.
 
-## Starting point
-
-Baseline: `c0554da2390a83a944b15c4389046977f5da2208`, as described in the
-[README](README.md) and [architecture](docs/ARCHITECTURE.md). Holdfast already
-imports receipts locally, supports multiple items, records user-verified return
-and warranty dates, exports proof packets and calendars, and restores portable
-backup sets atomically. A backup export is already shipped; another ZIP format
-is not the next customer outcome.
-
 Target user: someone trying to return or claim coverage for a household purchase
 without finding the receipt, policy and supporting documents again.
+
+A backup export is already shipped; another ZIP format is not the next customer
+outcome.
 
 ## Priorities
 

@@ -2,11 +2,9 @@
 
 **Keep the proof. Lose the paper pile.** A private, local-first receipt cabinet that turns a receipt into a transparent return/warranty timeline and a ready-to-export proof packet.
 
-Private source repository: https://github.com/aranlucas/holdfast-local
-
 ## Run
 
-Requires Node.js 22.12+ (CI uses Node 24; also tested locally on Node 26.10) and the pnpm version pinned in `package.json`. No account, credentials, AI service, database server, or environment secrets.
+Use the Node.js version in `.node-version` and the pnpm version pinned in `package.json`. No account, credentials, AI service, database server, or environment secrets.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -16,7 +14,7 @@ pnpm start
 
 Open **http://127.0.0.1:4319**. The production build works offline after its first successful load. Keep the same browser and address/port to use the same cabinet. For development: `pnpm run dev` at **https://holdfast.localhost** (offline caching is disabled in development). `pnpm run dev` runs through [Portless](https://github.com/vercel-labs/portless) (a dev dependency); its first run may ask for `sudo` to bind port 443 and trust a local certificate.
 
-The portable built-app ZIP includes `dist/` and `server.mjs`; unzip and run `node server.mjs` without installing dependencies.
+To run a portable build without installing dependencies, copy `dist/` and `server.mjs` together and run `node server.mjs` from that directory.
 
 ## Try it in one minute
 
@@ -27,7 +25,7 @@ The portable built-app ZIP includes `dist/` and `server.mjs`; unzip and run `nod
 
 ## Input and rules
 
-- Paste text or drop TXT/Markdown, text-layer PDFs, PNG, JPEG, or WebP. PDFs are processed locally; photos/scanned PDFs keep the original document and require manual fact entry. Limits: 12 MB per document, 20 PDF pages, 100,000 receipt-text characters, 10 attachments per purchase.
+- Paste text or drop TXT/Markdown, text-layer PDFs, PNG, JPEG, or WebP. PDFs are processed locally; photos/scanned PDFs keep the original document and require manual fact entry. Limits: 12 MiB per document, 20 PDF pages, 100,000 receipt-text characters, 10 attachments per purchase.
 - Receipt extraction is deterministic and conservative. Labeled facts get strong matches, likely facts get suggestions, ambiguous numeric dates remain empty. Confidence is qualitative, not a calibrated probability. Verify all facts. Multiple labeled/likely priced lines open a product picker. Selected products become independent verification drafts, with source line evidence and the complete original document. Receipt totals are never copied to each product; missing line amounts stay empty and shared taxes/shipping/discounts are not allocated. Up to 20 items can be tracked in one pass (first 100 suggested lines shown). Cancelling discards remaining drafts while keeping already saved items.
 - Each record has an independent policy: unknown, explicit calendar-day return window, exact end date, or no stated window; warranty term in calendar months, exact end date, unknown, or none stated. No universal merchant rule or legal entitlement is inferred.
 - Choose purchase/delivery start and whether the start date is day 0 or day 1. Warranty month-end addition clamps to the last day. Dates use UTC calendar arithmetic and display without shifting across time zones; “today” follows the browser’s zone.
@@ -49,26 +47,21 @@ pnpm test
 pnpm run build
 pnpm exec playwright install chromium
 pnpm run test:e2e
+pnpm run lint
 pnpm run check:format
 ```
 
 Unit tests use a separate Vitest configuration so receipt/date/export logic can run without initializing the production service-worker plugin. The production build and browser tests still use `vite.config.ts` and require its PWA dependencies.
 
-Hosted CI runs formatting, unit tests, the production build, and the browser suite with one Chromium worker on pull requests and main-branch pushes. It does not deploy.
+Hosted CI runs lint, formatting, unit tests, the production build, and the browser suite on non-draft pull requests and main-branch pushes. It does not deploy.
 
-Browser tests use one worker and start and stop their own local production server on port 4319. An occupied port fails explicitly so an unrelated checkout cannot supply the tested build. To reuse an already installed Chromium, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable. Screenshots and sample exports default to `/tmp/holdfast-qa`; override with `HOLDFAST_EVIDENCE_DIR`. Tests use only synthetic data. See [QA](docs/QA.md) and [decisions](docs/DECISIONS.md).
+Browser tests use one worker and start and stop their own local production server on port 4319. An occupied port fails explicitly so an unrelated checkout cannot supply the tested build. To reuse an already installed Chromium, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable. Screenshots and sample exports default to `/tmp/holdfast-qa`; override with `HOLDFAST_EVIDENCE_DIR`. Tests use only synthetic data.
 
-The shelf flow collects requests across its browser context and compares parsed URL origins with Playwright's `baseURL`; `blob:` and `data:` fixtures remain allowed. A separate browser regression fulfills requests in memory and verifies that another page's request to a prefix-matching port is reported. Run it with `pnpm test:e2e local-requests.e2e.ts` after building. This checks the request assertion, not every possible network channel or application flow. Native Oxlint enforces classic complexity at most 9 for these browser tests and the request collector.
+Coverage is limited to Chromium and monitored application flows; the request checks do not cover every network channel. Safari/Firefox, real iOS/Android and real calendar-client imports remain unverified. Automated accessibility checks do not replace a screen-reader usability review. Real merchant eligibility, personal receipts, external claim submission and deployed-host behavior are not tested.
 
 ## Deployment compatibility
-
-No infrastructure has been provisioned or publicly deployed.
 
 - **Railway**: `Dockerfile` and `railway.json`; static Node server honors `PORT`, binds `HOST=0.0.0.0` in Docker, and offers `/health`. The image needs no runtime npm dependencies. Configure access controls before a user-approved release.
 - **Cloudflare**: build and use `dist/` as static assets; `wrangler.jsonc` is a compatible Workers static-assets configuration. `_headers` provides the same security headers for Cloudflare Pages. Provisioning/deployment remains a separate user-approved action.
 
-## Structure
-
-`model.ts` owns pure date/rule validation; `extraction.ts` owns local import; `receipt-items.ts` owns conservative per-product suggestions; `calendar.ts` owns RFC 5545 export; `storage.ts` owns IndexedDB; `exports.ts` owns escaped proof packets; `backup.ts` coordinates validated backup sets through native zip.js volumes, per-record metadata chunks and a hashed set index. React components separate shelf, three-fact verification, detail preparation, timeline, and device controls. PDF.js and backup archive code load lazily; all production assets are precached for offline first use.
-
-See [module and API contracts](docs/ARCHITECTURE.md) for data flow, persistence guarantees, error handling, and [backup compatibility and format](docs/BACKUPS.md). Bulk restores commit all records together. A failed write rolls back the transaction, retains the causal error, and can be retried. Native Oxlint enforces classic complexity below 10 for storage, backup modules, device controls and the browser regression tests.
+See [architecture contracts](docs/ARCHITECTURE.md), [backup recovery and format](docs/BACKUPS.md), [design decisions](docs/DECISIONS.md), and the proposed [feature roadmap](ROADMAP.md).
