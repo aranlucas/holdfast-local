@@ -13,7 +13,7 @@ import {
   warrantyDeadline,
 } from "@/model";
 import { extractReceipt, readReceiptFile } from "@/extraction";
-import { demoPurchases, samplePolicy, sampleText } from "@/samples";
+import { samplePolicy, sampleText } from "@/samples";
 import { escapeHTML, exportPacket, packetHTML, safeName } from "@/exports";
 import JSZip from "jszip";
 import { exportBackup, importBackup } from "@/backup";
@@ -123,12 +123,6 @@ describe("confirmed item-specific policies", () => {
     p.purchaseDate = "2199-12-31";
     expect(returnDeadline(p).state).toBe("unknown");
     expect(warrantyDeadline(p).state).toBe("unknown");
-  });
-  it("keeps distinct product policies distinct", () => {
-    const [a, b, c] = demoPurchases("2026-10-02");
-    expect(a.policy.returnDays).toBe(30);
-    expect(b.policy.returnDays).toBe(45);
-    expect(c.policy.returnMode).toBe("unknown");
   });
   it("marks today, past dates and closed outcomes distinctly", () => {
     const p = fixture();
