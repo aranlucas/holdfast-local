@@ -10,6 +10,7 @@ import {
   returnStatus,
   todayInZone,
   validatePurchase,
+  purchaseIssues,
   warrantyDeadline,
 } from "@/model";
 import { extractReceipt, readReceiptFile } from "@/extraction";
@@ -245,7 +246,7 @@ describe("portable, safe proof and backup exports", () => {
     expect(await imported[0].attachments[0].blob.text()).toBe("abc");
   });
   it("rejects malformed or unsupported backup schemas", () => {
-    expect(() => validateBackupRecord({})).toThrow(/invalid_type/);
+    expect(() => validateBackupRecord({})).toThrow(/merchant/);
     const p = fixture();
     const malformed = { ...p, policy: { ...p.policy, returnMode: "evil" } };
     expect(() => validateBackupRecord(malformed)).toThrow("policy");
@@ -306,4 +307,42 @@ it("rejects invalid backup primitives before persistence", () => {
       evidence: { ...p.evidence, item: { ...p.evidence.item, line: 0 } },
     }),
   ).toThrow(/line/);
+});
+
+it("assigns verification errors to the facts users must correct", () => {
+  const p = fixture();
+  p.merchant = "";
+  p.purchaseDate = "invalid";
+  p.policy.returnDays = 0;
+  const issues = purchaseIssues(p);
+  expect(issues).toContainEqual({ group: "facts", message: "Enter the merchant." });
+  expect(issues).toContainEqual({
+    group: "dates",
+    message: "Enter a valid purchase date between 1900 and 2199.",
+  });
+  expect(issues).toContainEqual({
+    group: "policy",
+    message: "Return days must be a whole number from 1 to 3650.",
+  });
+});
+
+it("requests rule-required delivery dates in date verification", () => {
+  const p = fixture();
+  p.policy.startOn = "arrival";
+  p.arrivalDate = "";
+  expect(purchaseIssues(p)).toContainEqual({
+    group: "dates",
+    message: "Enter the delivery date used by your rule, or choose a purchase-date rule.",
+  });
+});
+
+it("keeps a policy end before purchase in policy verification", () => {
+  const p = fixture();
+  p.policy.returnMode = "date";
+  p.purchaseDate = "2026-10-02";
+  p.policy.returnDate = "2026-10-01";
+  expect(purchaseIssues(p)).toContainEqual({
+    group: "policy",
+    message: "A policy end date cannot be before the purchase date.",
+  });
 });

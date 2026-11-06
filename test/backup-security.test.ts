@@ -2,8 +2,7 @@ import { expect, it } from "vitest";
 import JSZip from "jszip";
 import { BlobReader, ZipReader } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { exportBackup, importBackup } from "@/backup";
-import { blankPurchase } from "@/model";
-import { purchaseMetadata } from "@/backup-schema";
+import { blankPurchase, purchaseMetadata } from "@/model";
 import type { Purchase } from "@/model";
 
 function purchase(): Purchase {

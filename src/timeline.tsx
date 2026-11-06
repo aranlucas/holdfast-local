@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { ArrowRight, CalendarDays, ShieldCheck } from "lucide-react";
 import type { Purchase } from "./model";
-import { daysLeft, formatDate, returnDeadline, todayInZone, warrantyDeadline } from "./model";
-import { calendarBlob, calendarEvents } from "./calendar";
+import { dayNumber, formatDate, returnDeadline, todayInZone, warrantyDeadline } from "./model";
+import { calendarBlob } from "./calendar";
+import { policyEvents } from "./policy-events";
 import { downloadBlob } from "./exports";
 
 export function Timeline({ purchases, onSelect }: TimelineProps) {
@@ -10,20 +11,9 @@ export function Timeline({ purchases, onSelect }: TimelineProps) {
   const today = todayInZone();
   const active = purchases.filter((p) => p.outcome === "active");
 
-  const events = active
-    .flatMap((p) => [
-      { p, kind: "return", deadline: returnDeadline(p) },
-      { p, kind: "warranty", deadline: warrantyDeadline(p) },
-    ])
-    .flatMap((e) => {
-      const { date } = e.deadline;
-      const left = daysLeft(date, today);
-
-      return date && left !== null && (kind === "all" || e.kind === kind)
-        ? [{ ...e, date, left }]
-        : [];
-    })
-    // oxlint-disable-next-line unicorn/no-array-sort -- Sort this fresh event array without requiring ES2023 Array.prototype.toSorted.
+  const events = policyEvents(active, kind)
+    .map((event) => ({ ...event, left: dayNumber(event.date) - dayNumber(today) }))
+    // oxlint-disable-next-line unicorn/no-array-sort -- Sort a fresh array with the ES2022 browser target.
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const unknown = purchases.filter(
@@ -65,7 +55,7 @@ export function Timeline({ purchases, onSelect }: TimelineProps) {
         <button
           type="button"
           className="button secondary"
-          disabled={!calendarEvents(active, kind).length}
+          disabled={!events.length}
           onClick={() => downloadBlob(calendarBlob(active, kind), "Holdfast-recorded-dates.ics")}
         >
           <CalendarDays size={17} /> Export visible dates (.ics)

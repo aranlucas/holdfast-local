@@ -13,9 +13,8 @@ See the [input rules](../README.md#input-and-rules) for supported files, limits,
 per-item amounts and calendar conventions.
 
 `validatePurchase` returns ordered, user-facing errors for purchase and policy
-facts; it is not a runtime schema for arbitrary objects. The verifier currently
-classifies English error messages to choose a step, so preserve error order and
-messages until it uses structured field/step codes. Supported calendar years are
+facts; it is not a runtime schema for arbitrary objects. `purchaseIssues` owns explicit fact/date/policy groups consumed by the verifier;
+`validatePurchase` preserves the ordered message API for backup validation. Supported calendar years are
 1900–2199; date arithmetic can throw for invalid or out-of-range inputs.
 Checklist IDs are stored and exported, so keep them stable.
 
@@ -73,9 +72,13 @@ register the offline cache.
 2. Bound receipt parsing and PDF extraction work; add cancellation and retain
    original-document and malformed-input tests. Backup extraction now relies on
    tested native output-size and CRC enforcement.
-3. Extract typed fact/date/policy validation groups from `validatePurchase`, keeping
-   error order and messages until the verifier uses structured issues. Separate
-   shelf selectors and persistence/queue orchestration from `App`.
+3. Keep validation groups with domain rules and confirmed policy-event selection
+   shared between timeline and calendar. Keep queue orchestration with its modal
+   selection and per-item saves in `App`.
 4. Test corrupt stored data, replacement-batch rollback, tab concurrency, stale
    import completions, PDF cancellation, and recovery after a committed restore
    whose subsequent reload fails. Safari/Firefox remain unverified.
+
+Purchase metadata projection belongs to `model.ts`, independent of backup schemas.
+Evidence byte/count and receipt character budgets belong to `evidence.ts`.
+`policy-events.ts` selects confirmed known dates; callers own outcome filtering.

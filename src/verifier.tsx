@@ -2,7 +2,7 @@ import { z } from "zod";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, FileText } from "lucide-react";
 import type { EvidenceKey, Policy, Purchase } from "./model";
-import { formatDate, returnDeadline, validatePurchase, warrantyDeadline } from "./model";
+import { formatDate, returnDeadline, purchaseIssues, warrantyDeadline } from "./model";
 import { samplePolicy } from "./samples";
 import { Field, Modal, Notice } from "./ui";
 
@@ -74,14 +74,11 @@ export function Verifier({ initial, onClose, onSave, busy, queueProgress }: Veri
   }
 
   function next() {
-    const all = validatePurchase(p);
+    const group = step === 0 ? "facts" : "dates";
 
-    const relevant =
-      step === 0
-        ? all.filter((e) => /merchant|item you|amount|currency/.test(e))
-        : step === 1
-          ? all.filter((e) => /purchase date|delivery|Delivery/.test(e))
-          : all;
+    const relevant = purchaseIssues(p)
+      .filter((issue) => step === 2 || issue.group === group)
+      .map((issue) => issue.message);
 
     if (relevant.length) {
       setErrors(relevant);

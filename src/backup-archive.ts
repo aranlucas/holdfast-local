@@ -19,8 +19,6 @@ export const BACKUP_DESCRIPTOR_BYTES = 4096;
 
 export const LEGACY_METADATA_BYTES = 5 * 1024 * 1024;
 
-export const BACKUP_EVIDENCE_BYTES = 12 * 1024 * 1024;
-
 export type BackupPart = { name: string; blob: Blob };
 
 export type BackupOptions = { signal?: AbortSignal };

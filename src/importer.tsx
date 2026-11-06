@@ -1,3 +1,4 @@
+import { MAX_RECEIPT_CHARACTERS } from "./evidence";
 import { useRef, useState } from "react";
 import { ArrowRight, FileText, Upload, Sparkles } from "lucide-react";
 import { Modal, Notice } from "./ui";
@@ -113,7 +114,7 @@ export function Importer({ onClose, onReady }: ImporterProps) {
           aria-label="Receipt text"
           placeholder={"Merchant: …\nPurchase date: YYYY-MM-DD\nItem: …\nTotal: USD …"}
           rows={7}
-          maxLength={100000}
+          maxLength={MAX_RECEIPT_CHARACTERS}
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={busy}

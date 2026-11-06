@@ -1,3 +1,4 @@
+import { policyEvents } from "@/policy-events";
 import { describe, expect, it } from "vitest";
 import ICAL from "ical.js";
 import { extractReceipt } from "@/extraction";
@@ -155,4 +156,13 @@ describe("RFC 5545 date-only calendar export", () => {
     expect(event.startDate.toString()).toBe("2199-12-31");
     expect(event.endDate.toString()).toBe("2200-01-01");
   });
+});
+
+it("leaves closed-record eligibility to the caller of policy events", () => {
+  const p = known();
+  p.outcome = "returned";
+  expect(policyEvents([p], "return").map((event) => event.date)).toEqual(["2024-02-29"]);
+  expect(policyEvents([p].filter((purchase) => purchase.outcome === "active"))).toEqual([]);
+  p.confirmedAt = "";
+  expect(policyEvents([p])).toEqual([]);
 });

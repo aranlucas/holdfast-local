@@ -1,4 +1,4 @@
-import { returnDeadline, warrantyDeadline } from "./model";
+import { policyEvents } from "./policy-events";
 import type { Purchase } from "./model";
 
 function textValue(value: string): string {
@@ -35,25 +35,6 @@ function fold(line: string): string {
   return result + part;
 }
 
-export function calendarEvents(purchases: Purchase[], kind = "all") {
-  return purchases
-    .flatMap((p) =>
-      p.confirmedAt
-        ? [
-            { p, kind: "return", deadline: returnDeadline(p) },
-            { p, kind: "warranty", deadline: warrantyDeadline(p) },
-          ]
-        : [],
-    )
-    .flatMap((e) => {
-      const { date } = e.deadline;
-
-      return e.deadline.state === "known" && date && (kind === "all" || e.kind === kind)
-        ? [{ ...e, date }]
-        : [];
-    });
-}
-
 export function calendarText(purchases: Purchase[], kind = "all", now = new Date()): string {
   const stamp = now
     .toISOString()
@@ -67,7 +48,7 @@ export function calendarText(purchases: Purchase[], kind = "all", now = new Date
     "CALSCALE:GREGORIAN",
   ];
 
-  for (const e of calendarEvents(purchases, kind)) {
+  for (const e of policyEvents(purchases, kind)) {
     const { date } = e;
 
     // DATE values are calendar days. DTEND is exclusive, including at 2199-12-31.

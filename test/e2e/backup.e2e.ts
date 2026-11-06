@@ -3,8 +3,7 @@ import type { Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { exportBackup, importBackup } from "@/backup";
-import { purchaseMetadata } from "@/backup-schema";
-import { blankPurchase } from "@/model";
+import { blankPurchase, purchaseMetadata } from "@/model";
 import type { Purchase } from "@/model";
 import { required } from "@test/helpers/required";
 

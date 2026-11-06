@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -124,7 +124,6 @@ export default function App() {
   const [drag, setDrag] = useState(false);
 
   const busyRef = useRef(false);
-  const importSequence = useRef(0);
 
   const [today, setToday] = useState(todayInZone);
   useEffect(() => {
@@ -140,31 +139,23 @@ export default function App() {
     };
   }, []);
 
-  async function load() {
-    setError("");
-
-    try {
-      setPurchases(await loadPurchases());
-      setLoaded(true);
-    } catch {
-      setError(
-        "Device storage is unavailable. Your saved cabinet could not be loaded. Retry, or allow browser storage for this address.",
-      );
-    }
-  }
-
-  useEffect(() => {
+  const load = useCallback(() => {
     loadPurchases()
-      .then((loadedPurchases) => {
-        setPurchases(loadedPurchases);
+      .then((records) => {
+        setPurchases(records);
+        setLoaded(true);
 
-        return setLoaded(true);
+        return setError("");
       })
       .catch(() =>
         setError(
           "Device storage is unavailable. Your saved cabinet could not be loaded. Retry, or allow browser storage for this address.",
         ),
       );
+  }, []);
+
+  useEffect(() => {
+    load();
     const net = () => setOnline(navigator.onLine);
     window.addEventListener("online", net);
     window.addEventListener("offline", net);
@@ -173,7 +164,7 @@ export default function App() {
       window.removeEventListener("online", net);
       window.removeEventListener("offline", net);
     };
-  }, []);
+  }, [load]);
   useEffect(() => {
     if (import.meta.env.PROD && "serviceWorker" in navigator) {
       void navigator.serviceWorker
@@ -285,16 +276,13 @@ export default function App() {
       return;
     }
 
-    const sequence = ++importSequence.current;
     setBusy(true);
     setError("");
 
     try {
       const p = await readReceiptFile(file);
 
-      if (sequence === importSequence.current) {
-        receiveReceipt(p);
-      }
+      receiveReceipt(p);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not read this receipt. Try again.");
     } finally {
@@ -457,7 +445,7 @@ export default function App() {
                   type="button"
                   className="button secondary"
                   onClick={() => {
-                    load().catch(() => setError("Device storage could not be loaded. Try again."));
+                    load();
                   }}
                 >
                   Retry device storage
