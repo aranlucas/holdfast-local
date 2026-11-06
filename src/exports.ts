@@ -1,7 +1,13 @@
-import { CHECKLIST, formatDate, money, returnDeadline, warrantyDeadline } from "./model";
+import {
+  CHECKLIST,
+  purchaseMetadata,
+  formatDate,
+  money,
+  returnDeadline,
+  warrantyDeadline,
+} from "./model";
 import type { Purchase } from "./model";
 import JSZip from "jszip";
-import { purchaseMetadata } from "./backup-schema";
 
 export function safeName(name: string): string {
   return (

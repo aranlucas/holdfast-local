@@ -1,13 +1,6 @@
+import { MAX_ATTACHMENTS, MAX_FILE_BYTES } from "./evidence";
 import { z } from "zod";
 import { CHECKLIST, validatePurchase } from "./model";
-import type { Purchase } from "./model";
-
-export function purchaseMetadata(p: Purchase) {
-  return {
-    ...p,
-    attachments: p.attachments.map(({ id, name, type, size }) => ({ id, name, type, size })),
-  };
-}
 
 const backupText = z.string();
 
@@ -77,15 +70,11 @@ export const backupRecord = z
             id: backupId,
             name: z.string(),
             type: z.string(),
-            size: z
-              .number()
-              .int()
-              .min(0)
-              .max(12 * 1024 * 1024),
+            size: z.number().int().min(0).max(MAX_FILE_BYTES),
           })
           .passthrough(),
       )
-      .max(10),
+      .max(MAX_ATTACHMENTS),
   })
   .passthrough()
   .superRefine((record, context) => {
@@ -107,7 +96,6 @@ export const backupRecord = z
     }
   });
 
-// Zod owns the untrusted-input boundary and preserves the precise parsed return contract.
 export const validateBackupRecord = backupRecord.parse.bind(backupRecord);
 
 export const legacyBackupManifest = z.object({

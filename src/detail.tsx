@@ -21,9 +21,10 @@ import {
 } from "./model";
 import type { Purchase } from "./model";
 import { downloadBlob, exportPacket, packetHTML, safeName } from "./exports";
-import { MAX_FILE_BYTES } from "./extraction";
+import { MAX_ATTACHMENTS, MAX_FILE_BYTES } from "./evidence";
 import { Field, Modal, Notice } from "./ui";
-import { calendarBlob, calendarEvents } from "./calendar";
+import { calendarBlob } from "./calendar";
+import { policyEvents } from "./policy-events";
 
 export function Detail({ p, onClose, onEdit, onSave, busy }: DetailProps) {
   const [notes, setNotes] = useState(p.notes);
@@ -79,7 +80,7 @@ export function Detail({ p, onClose, onEdit, onSave, busy }: DetailProps) {
         throw new Error("Evidence must be 12 MB or smaller.");
       }
 
-      if (p.attachments.length >= 10) {
+      if (p.attachments.length >= MAX_ATTACHMENTS) {
         throw new Error("Each purchase can hold up to 10 documents.");
       }
 
@@ -179,7 +180,7 @@ export function Detail({ p, onClose, onEdit, onSave, busy }: DetailProps) {
             <button
               type="button"
               className="text-button"
-              disabled={!calendarEvents([p]).length}
+              disabled={!policyEvents([p]).length}
               onClick={() =>
                 downloadBlob(calendarBlob([p]), `Holdfast-${safeName(p.item)}-dates.ics`)
               }

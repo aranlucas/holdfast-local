@@ -1,3 +1,4 @@
+import { MAX_FILE_BYTES, MAX_RECEIPT_CHARACTERS } from "./evidence";
 import type { TextContent } from "pdfjs-dist/types/src/display/api";
 import { blankPurchase, isDate } from "./model";
 import type { Evidence, EvidenceKey, Purchase } from "./model";
@@ -39,7 +40,7 @@ function dateCandidate(raw: string): DateCandidate {
 
 export function extractReceipt(text: string, label = "Pasted receipt"): Purchase {
   const p = blankPurchase();
-  p.receiptText = text.slice(0, 100000);
+  p.receiptText = text.slice(0, MAX_RECEIPT_CHARACTERS);
   p.sourceLabel = label;
 
   const lines = p.receiptText
@@ -189,8 +190,6 @@ export function extractReceipt(text: string, label = "Pasted receipt"): Purchase
   return p;
 }
 
-export const MAX_FILE_BYTES = 12 * 1024 * 1024;
-
 export async function readReceiptFile(file: File): Promise<Purchase> {
   if (file.size > MAX_FILE_BYTES) {
     throw new Error(
@@ -206,7 +205,7 @@ export async function readReceiptFile(file: File): Promise<Purchase> {
   if (name.endsWith(".txt") || name.endsWith(".md") || file.type === "text/plain") {
     text = await file.text();
 
-    if (text.length > 100000) {
+    if (text.length > MAX_RECEIPT_CHARACTERS) {
       throw new Error("Receipt text is too long. Keep it under 100,000 characters.");
     }
   } else if (name.endsWith(".pdf")) {
@@ -236,7 +235,7 @@ export async function readReceiptFile(file: File): Promise<Purchase> {
 
       text = pages.join("\n\n");
 
-      if (text.length > 100000) {
+      if (text.length > MAX_RECEIPT_CHARACTERS) {
         throw new Error("Extracted text is too long. Use a smaller receipt.");
       }
 

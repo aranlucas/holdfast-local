@@ -55,6 +55,13 @@ export type Purchase = {
   confirmedAt: string;
 };
 
+export function purchaseMetadata(p: Purchase) {
+  return {
+    ...p,
+    attachments: p.attachments.map(({ id, name, type, size }) => ({ id, name, type, size })),
+  };
+}
+
 export type Deadline = {
   date: string | null;
   explanation: string;
@@ -423,35 +430,40 @@ export function money(p: Pick<Purchase, "amount" | "currency">): string {
   }
 }
 
-export function validatePurchase(p: Purchase): string[] {
-  const errors: string[] = [];
+export type ValidationGroup = "facts" | "dates" | "policy";
+
+export type PurchaseIssue = { group: ValidationGroup; message: string };
+
+export function purchaseIssues(p: Purchase): PurchaseIssue[] {
+  const errors: PurchaseIssue[] = [];
+  const report = (group: ValidationGroup, message: string) => errors.push({ group, message });
 
   if (!p.merchant.trim()) {
-    errors.push("Enter the merchant.");
+    report("facts", "Enter the merchant.");
   }
 
   if (!p.item.trim()) {
-    errors.push("Enter the item you are tracking.");
+    report("facts", "Enter the item you are tracking.");
   }
 
   if (!isDate(p.purchaseDate)) {
-    errors.push("Enter a valid purchase date between 1900 and 2199.");
+    report("dates", "Enter a valid purchase date between 1900 and 2199.");
   }
 
   if (p.arrivalDate && !isDate(p.arrivalDate)) {
-    errors.push("Enter a valid delivery date.");
+    report("dates", "Enter a valid delivery date.");
   }
 
   if (isDate(p.purchaseDate) && isDate(p.arrivalDate) && p.arrivalDate < p.purchaseDate) {
-    errors.push("Delivery cannot be before the purchase.");
+    report("dates", "Delivery cannot be before the purchase.");
   }
 
   if (p.amount !== "" && (!/^\d+(\.\d{1,2})?$/.test(p.amount) || Number(p.amount) > 1e9)) {
-    errors.push("Enter a valid amount with at most two decimal places.");
+    report("facts", "Enter a valid amount with at most two decimal places.");
   }
 
   if (!/^[A-Z]{3}$/.test(p.currency)) {
-    errors.push("Choose a three-letter currency code.");
+    report("facts", "Choose a three-letter currency code.");
   }
 
   const q = p.policy;
@@ -462,44 +474,47 @@ export function validatePurchase(p: Purchase): string[] {
       (q.warrantyMode === "months" && q.warrantyStartOn === "arrival")) &&
     !isDate(p.arrivalDate)
   ) {
-    errors.push("Enter the delivery date used by your rule, or choose a purchase-date rule.");
+    errors.push({
+      group: "dates",
+      message: "Enter the delivery date used by your rule, or choose a purchase-date rule.",
+    });
   }
 
   if (
     q.returnMode === "days" &&
     (!Number.isInteger(q.returnDays) || q.returnDays < 1 || q.returnDays > 3650)
   ) {
-    errors.push("Return days must be a whole number from 1 to 3650.");
+    report("policy", "Return days must be a whole number from 1 to 3650.");
   }
 
   if (
     q.warrantyMode === "months" &&
     (!Number.isInteger(q.warrantyMonths) || q.warrantyMonths < 1 || q.warrantyMonths > 1200)
   ) {
-    errors.push("Warranty months must be a whole number from 1 to 1200.");
+    report("policy", "Warranty months must be a whole number from 1 to 1200.");
   }
 
   if (q.returnMode === "date" && !isDate(q.returnDate)) {
-    errors.push("Enter the exact return date.");
+    report("policy", "Enter the exact return date.");
   }
 
   if (q.warrantyMode === "date" && !isDate(q.warrantyDate)) {
-    errors.push("Enter the exact warranty date.");
+    report("policy", "Enter the exact warranty date.");
   }
 
   if ((q.returnMode !== "unknown" || q.warrantyMode !== "unknown") && !q.sourceLabel.trim()) {
-    errors.push("Give the policy a source label so its origin stays visible.");
+    report("policy", "Give the policy a source label so its origin stays visible.");
   }
 
   if ((q.returnMode !== "unknown" || q.warrantyMode !== "unknown") && !q.appliesTo.trim()) {
-    errors.push("State which item this policy applies to.");
+    report("policy", "State which item this policy applies to.");
   }
 
   if (
     (q.returnMode === "date" && isDate(q.returnDate) && q.returnDate < p.purchaseDate) ||
     (q.warrantyMode === "date" && isDate(q.warrantyDate) && q.warrantyDate < p.purchaseDate)
   ) {
-    errors.push("A policy end date cannot be before the purchase date.");
+    report("policy", "A policy end date cannot be before the purchase date.");
   }
 
   if (
@@ -507,7 +522,7 @@ export function validatePurchase(p: Purchase): string[] {
     returnDeadline(p).state === "unknown" &&
     isDate(q.startOn === "purchase" ? p.purchaseDate : p.arrivalDate)
   ) {
-    errors.push("The return date is outside the supported range.");
+    report("policy", "The return date is outside the supported range.");
   }
 
   if (
@@ -515,8 +530,12 @@ export function validatePurchase(p: Purchase): string[] {
     warrantyDeadline(p).state === "unknown" &&
     isDate(q.warrantyStartOn === "purchase" ? p.purchaseDate : p.arrivalDate)
   ) {
-    errors.push("The warranty date is outside the supported range.");
+    report("policy", "The warranty date is outside the supported range.");
   }
 
   return errors;
+}
+
+export function validatePurchase(p: Purchase): string[] {
+  return purchaseIssues(p).map((issue) => issue.message);
 }

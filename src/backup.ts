@@ -1,8 +1,9 @@
+import { MAX_FILE_BYTES } from "./evidence";
 import type { Entry } from "@zip.js/zip.js";
+import { purchaseMetadata } from "./model";
 import type { Attachment, Purchase } from "./model";
 import {
   BACKUP_DESCRIPTOR_BYTES,
-  BACKUP_EVIDENCE_BYTES,
   BACKUP_METADATA_BYTES,
   BACKUP_PART_BYTES,
   LEGACY_METADATA_BYTES,
@@ -12,7 +13,7 @@ import {
   validateBackupVolumes,
   writeBackupArchive,
 } from "./backup-archive";
-import { backupHeader, backupRecord, recordManifest, purchaseMetadata } from "./backup-schema";
+import { backupHeader, backupRecord, recordManifest } from "./backup-schema";
 import type { BackupManifest, BackupRecord } from "./backup-schema";
 import type { BackupOptions } from "./backup-archive";
 import { createBackupSet, orderedBackupFiles } from "./backup-set";
@@ -198,7 +199,7 @@ async function restorePurchase(
   for (const attachment of purchase.attachments) {
     const entry = backupFile(entries, evidencePath(purchase.id, attachment.id));
     // oxlint-disable-next-line eslint/no-await-in-loop -- Keep evidence extraction sequential and fail before starting another document.
-    const blob = await readBackupFile(entry, BACKUP_EVIDENCE_BYTES, attachment.type);
+    const blob = await readBackupFile(entry, MAX_FILE_BYTES, attachment.type);
     attachments.push({ ...attachment, blob });
   }
 

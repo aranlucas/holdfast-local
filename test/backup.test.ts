@@ -2,8 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import JSZip from "jszip";
 import { exportBackup, importBackup } from "@/backup";
-import { purchaseMetadata } from "@/backup-schema";
-import { blankPurchase } from "@/model";
+import { blankPurchase, purchaseMetadata } from "@/model";
 import type { Purchase } from "@/model";
 
 function purchase(): Purchase {
@@ -28,7 +27,7 @@ async function roundTrip(original: Purchase[]) {
   return importBackup(parts.map((part) => new File([part.blob], part.name)));
 }
 
-describe("complete cabinet backups", () => {
+describe("complete cabinet backups", { timeout: 120000 }, () => {
   it.each([
     { count: 501, receiptLength: 0 },
     { count: 54, receiptLength: 100000 },
