@@ -65,3 +65,9 @@ Coverage is limited to Chromium and monitored application flows; the request che
 - **Cloudflare**: build and use `dist/` as static assets; `wrangler.jsonc` is a compatible Workers static-assets configuration. `_headers` provides the same security headers for Cloudflare Pages. Provisioning/deployment remains a separate user-approved action.
 
 See [architecture contracts](docs/ARCHITECTURE.md), [backup recovery and format](docs/BACKUPS.md), [design decisions](docs/DECISIONS.md), and the proposed [feature roadmap](ROADMAP.md).
+
+Reliability CI also runs a credential-free cabinet round trip with the pinned
+[tester-army/e2e](https://github.com/tester-army/e2e) web engine (`pnpm run test:journeys`).
+It verifies edited values after reload and after backup, clear and restore;
+Playwright retains the deeper offline, original-byte and injected-failure coverage.
+See [the behavior audit](docs/reliability-audit.md) for findings and CI evidence.

@@ -295,7 +295,15 @@ export default function App() {
 
     try {
       await saveMany(p);
-      setPurchases(await loadPurchases());
+
+      try {
+        setPurchases(await loadPurchases());
+      } catch {
+        setLoaded(false);
+        setError(
+          "Your backup was saved, but the updated cabinet could not be loaded. Retry device storage to refresh it; no need to restore again.",
+        );
+      }
     } finally {
       setBusy(false);
     }

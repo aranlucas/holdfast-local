@@ -338,6 +338,7 @@ export function Detail({ p, onClose, onEdit, onSave, busy }: DetailProps) {
           <Field label="Condition / preparation notes">
             <textarea
               value={notes}
+              disabled={busy}
               rows={3}
               maxLength={10000}
               onChange={(e) => {
@@ -350,6 +351,7 @@ export function Detail({ p, onClose, onEdit, onSave, busy }: DetailProps) {
             <Field label="Serial number">
               <input
                 value={serial}
+                disabled={busy}
                 maxLength={200}
                 onChange={(e) => {
                   setSerial(e.target.value);
