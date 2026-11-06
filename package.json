@@ -16,7 +16,8 @@
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix",
     "format:check": "oxfmt --check",
-    "typecheck:tooling": "tsc --noEmit -p tsconfig.tooling.json"
+    "typecheck:tooling": "tsc --noEmit -p tsconfig.tooling.json",
+    "test:journeys": "e2e run"
   },
   "dependencies": {
     "@zip.js/zip.js": "2.24.0",
@@ -31,11 +32,13 @@
   "devDependencies": {
     "@aranlucas/oxforge": "^0.2.2",
     "@axe-core/playwright": "^4.14.0",
+    "@e2e-dev/web": "0.15.5",
     "@playwright/test": "^1.64.1",
     "@types/node": "26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "e2e": "0.23.0",
     "husky": "^9.1.7",
     "ical.js": "^2.2.1",
     "lint-staged": "^17.6.0",

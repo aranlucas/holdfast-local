@@ -47,3 +47,80 @@ jobs:
 
       - name: Run browser tests
         run: pnpm run test:e2e
+
+      - name: Install e2e engine Chromium
+        run: pnpm exec e2e-web install chromium --with-deps
+
+      - name: Run deterministic cabinet journey
+        run: pnpm run test:journeys
+
+      - name: Upload browser failure evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reliability-evidence
+          path: |
+            .e2e
+            /tmp/holdfast-test-results
+            /tmp/holdfast-qa
+          include-hidden-files: true
+          retention-days: 7
+
+  baseline-regressions:
+    name: Verify pre-fix reproductions
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
+        with:
+          node-version-file: .node-version
+          cache: true
+          require-lockfile: true
+      - name: Restore audited defective implementation
+        run: git restore --source=960d837b1d0afdec2867cfc51a5e0100cb2ef846 -- src/app.tsx src/detail.tsx src/exports.ts
+      - run: pnpm run build
+      - run: pnpm exec playwright install --with-deps chromium --only-shell
+      - name: Prove extension export regression
+        shell: bash
+        run: |
+          set +e
+          pnpm exec vitest run test/reliability.test.ts > baseline-unit.log 2>&1
+          result=$?
+          set -e
+          cat baseline-unit.log
+          test "$result" -eq 1
+          grep -F "Cannot read properties of null (reading 'confidence')" baseline-unit.log
+      - name: Prove delayed-save and post-commit-refresh regressions
+        shell: bash
+        run: |
+          set +e
+          pnpm exec playwright test test/e2e/reliability.e2e.ts --reporter=json > baseline-browser.json
+          result=$?
+          set -e
+          test "$result" -eq 1
+          python - <<'PY'
+          import json
+          report = json.load(open('baseline-browser.json'))
+          assert report['stats']['unexpected'] == 2, report['stats']
+          def specs(suite):
+              yield from suite.get('specs', [])
+              for child in suite.get('suites', []):
+                  yield from specs(child)
+          errors = []
+          for suite in report['suites']:
+              for spec in specs(suite):
+                  for test in spec['tests']:
+                      errors.extend(e['message'] for r in test['results'] for e in r.get('errors', []))
+          assert any('toBeDisabled' in e and 'enabled' in e for e in errors), errors
+          assert any('Your backup was saved' in e for e in errors), errors
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: baseline-reproductions
+          path: baseline-*
